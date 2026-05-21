@@ -5,9 +5,7 @@ import sampleServices from "../../data/sampleServices";
 function BookService() {
   const { id } = useParams();
 
-  const service = sampleServices.find(
-    (service) => service.id === Number(id)
-  );
+  const service = sampleServices.find((service) => service.id === Number(id));
 
   const [booking, setBooking] = useState({
     name: "",
@@ -49,10 +47,7 @@ function BookService() {
 
     const updatedBookings = [...existingBookings, newBooking];
 
-    localStorage.setItem(
-      "customerBookings",
-      JSON.stringify(updatedBookings)
-    );
+    localStorage.setItem("customerBookings", JSON.stringify(updatedBookings));
 
     setMessage("Booking request submitted successfully!");
 
@@ -67,97 +62,131 @@ function BookService() {
 
   if (!service) {
     return (
-      <div>
-        <h1>Service Not Found</h1>
-        <Link to="/customer/services">
-          <button>Back to Services</button>
-        </Link>
+      <div className="booking-request-page">
+        <div className="booking-request-card">
+          <h1>Service Not Found</h1>
+
+          <Link to="/customer/services">
+            <button className="dark-btn">Back to Services</button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1>Book Service</h1>
-
-      <h2>{service.title}</h2>
-      <p><strong>Provider:</strong> {service.providerName}</p>
-      <p><strong>Price:</strong> ${service.price}</p>
-
-      {message && <p>{message}</p>}
-
-      <form onSubmit={handleSubmit}>
+    <div className="booking-request-page">
+      <div className="booking-request-header">
         <div>
-          <label>Your Name:</label>
-          <br />
-          <input
-            type="text"
-            name="name"
-            value={booking.name}
-            onChange={handleChange}
-            required
-          />
+          <h1>Request This Tasker</h1>
+          <p>Fill in the details below to send your task request.</p>
         </div>
 
-        <div>
-          <label>Your Email:</label>
-          <br />
-          <input
-            type="email"
-            name="email"
-            value={booking.email}
-            onChange={handleChange}
-            required
-          />
+        <Link to="/customer/services">
+          <button className="back-dashboard-btn">Back to Services</button>
+        </Link>
+      </div>
+
+      <div className="booking-request-card">
+        <div className="booking-service-summary">
+          <div className="booking-service-icon">
+            {service.category.charAt(0)}
+          </div>
+
+          <div>
+            <h2>{service.title}</h2>
+            <p>{service.providerName}</p>
+          </div>
         </div>
 
-        <div>
-          <label>Booking Date:</label>
-          <br />
-          <input
-            type="date"
-            name="date"
-            value={booking.date}
-            onChange={handleChange}
-            required
-          />
+        <div className="booking-summary-details">
+          <p>
+            <strong>Provider</strong>
+            <span>{service.providerName}</span>
+          </p>
+
+          <p>
+            <strong>Price</strong>
+            <span>${service.price}</span>
+          </p>
         </div>
 
-        <div>
-          <label>Booking Time:</label>
-          <br />
-          <input
-            type="time"
-            name="time"
-            value={booking.time}
-            onChange={handleChange}
-            required
-          />
+        {message && <p className="success-message">{message}</p>}
+
+        <form onSubmit={handleSubmit} className="booking-form">
+          <div className="form-row">
+            <label>Your Name</label>
+            <input
+              type="text"
+              name="name"
+              value={booking.name}
+              onChange={handleChange}
+              placeholder="Enter your name"
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <label>Your Email</label>
+            <input
+              type="email"
+              name="email"
+              value={booking.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <div className="form-two-columns">
+            <div className="form-row">
+              <label>Task Date</label>
+              <input
+                type="date"
+                name="date"
+                value={booking.date}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-row">
+              <label>Task Time</label>
+              <input
+                type="time"
+                name="time"
+                value={booking.time}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label>Task Details</label>
+            <textarea
+              name="notes"
+              value={booking.notes}
+              onChange={handleChange}
+              placeholder="Write any special request..."
+            />
+          </div>
+
+          <button type="submit" className="send-request-btn">
+            Send Task Request
+          </button>
+        </form>
+
+        <div className="booking-request-actions">
+          <Link to="/customer/services">
+            <button className="dark-btn">Back to Services</button>
+          </Link>
+
+          <Link to="/customer/bookings">
+            <button className="book-service-btn">View My Bookings</button>
+          </Link>
         </div>
-
-        <div>
-          <label>Notes:</label>
-          <br />
-          <textarea
-            name="notes"
-            value={booking.notes}
-            onChange={handleChange}
-            placeholder="Write any special request..."
-          />
-        </div>
-
-        <button type="submit">Confirm Booking</button>
-      </form>
-
-      <br />
-
-      <Link to="/customer/services">
-        <button>Back to Services</button>
-      </Link>
-
-      <Link to="/customer/bookings">
-        <button>View My Bookings</button>
-      </Link>
+      </div>
     </div>
   );
 }
