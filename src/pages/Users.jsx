@@ -1,5 +1,5 @@
 import { Search, Trash2, UserX } from 'lucide-react';
-import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import Badge from '../components/Badge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -41,25 +41,26 @@ export default function Users() {
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    async function loadUsers() {
-      try {
-        const snapshot = await getDocs(collection(db, 'users'));
+    const unsubscribe = onSnapshot(
+      collection(db, 'users'),
+      (snapshot) => {
         const firestoreUsers = snapshot.docs.map((userDoc) => ({
           ...userDoc.data(),
           id: userDoc.id,
         }));
 
         setUsers(firestoreUsers.length > 0 ? firestoreUsers : userData);
-      } catch (loadError) {
+        setLoading(false);
+      },
+      (loadError) => {
         console.error('Failed to load users:', loadError);
         setError('Could not load users from Firestore. Showing fallback data.');
         setUsers(userData);
-      } finally {
         setLoading(false);
       }
-    }
+    );
 
-    loadUsers();
+    return () => unsubscribe();
   }, []);
 
   const filteredUsers = useMemo(() => {

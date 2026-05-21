@@ -1,19 +1,66 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { CalendarCheck, DollarSign, Users, Wrench } from 'lucide-react';
+import { CalendarCheck, Clock3, DollarSign, MessageSquareWarning, Users, Wrench } from 'lucide-react';
+import { collection, onSnapshot } from 'firebase/firestore';
 import PageHeader from '../components/PageHeader.jsx';
 import StatCard from '../components/StatCard.jsx';
 import LoadingCard from '../components/LoadingCard.jsx';
-import { bookingAnalytics, recentActivities, stats } from '../data/mockData.js';
+import { bookingAnalytics, complaints, providerRequests, recentActivities, stats } from '../data/mockData.js';
 import { useEffect, useState } from 'react';
+import { db } from '../firebase.js';
 
-const icons = [Users, Wrench, CalendarCheck, DollarSign];
+const dashboardCards = [
+  { key: 'totalUsers', label: 'Total Users', icon: Users, fallback: stats[0] },
+  { key: 'totalProviders', label: 'Service Providers', icon: Wrench, fallback: stats[1] },
+  { key: 'totalBookings', label: 'Total Bookings', icon: CalendarCheck, fallback: stats[2] },
+  { key: 'totalComplaints', label: 'Total Complaints', icon: MessageSquareWarning, fallback: { value: complaints.length, change: '' } },
+  { key: 'revenue', label: 'Total Revenue', icon: DollarSign, fallback: stats[3] },
+  { key: 'pendingRequests', label: 'Pending Requests', icon: Clock3, fallback: { value: providerRequests.filter((request) => request.status === 'Pending').length, change: '' } },
+];
+
+function formatStatValue(key, value) {
+  if (value === undefined || value === null || value === '') {
+    return value;
+  }
+
+  if (key === 'revenue' && typeof value === 'number') {
+    return `$${value.toLocaleString()}`;
+  }
+
+  return typeof value === 'number' ? value.toLocaleString() : value;
+}
+
+function getDashboardStats(firestoreStats = {}) {
+  return dashboardCards.map(({ key, label, icon, fallback }) => ({
+    label,
+    icon,
+    change: fallback.change,
+    value: formatStatValue(key, firestoreStats[key] ?? fallback.value),
+  }));
+}
 
 export default function Dashboard() {
+  const [dashboardStats, setDashboardStats] = useState(() => getDashboardStats());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
+    const unsubscribe = onSnapshot(
+      collection(db, 'dashboardStats'),
+      (snapshot) => {
+        const firestoreStats = snapshot.docs[0]?.data();
+
+        setDashboardStats(firestoreStats ? getDashboardStats(firestoreStats) : getDashboardStats());
+        setLoading(false);
+      },
+      (loadError) => {
+        console.error('Failed to load dashboard stats:', loadError);
+        setError('Could not load dashboard statistics from Firestore. Showing fallback data.');
+        setDashboardStats(getDashboardStats());
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -22,9 +69,15 @@ export default function Dashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {loading
-          ? Array.from({ length: 4 }).map((_, index) => <LoadingCard key={index} />)
-          : stats.map((stat, index) => <StatCard key={stat.label} {...stat} icon={icons[index]} />)}
+          ? Array.from({ length: dashboardCards.length }).map((_, index) => <LoadingCard key={index} />)
+          : dashboardStats.map((stat) => <StatCard key={stat.label} {...stat} />)}
       </div>
+
+      {error && (
+        <div className="panel border-rose-200 bg-rose-50 p-5 text-sm font-medium text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
         <section className="panel p-5">

@@ -1,5 +1,5 @@
 import { Eye } from 'lucide-react';
-import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import Badge from '../components/Badge.jsx';
 import Modal from '../components/Modal.jsx';
@@ -36,25 +36,26 @@ export default function Bookings() {
   const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
-    async function loadBookings() {
-      try {
-        const snapshot = await getDocs(collection(db, 'bookings'));
+    const unsubscribe = onSnapshot(
+      collection(db, 'bookings'),
+      (snapshot) => {
         const firestoreBookings = snapshot.docs.map((bookingDoc) => ({
           ...bookingDoc.data(),
           id: bookingDoc.id,
         }));
 
         setBookings(firestoreBookings.length > 0 ? firestoreBookings : bookingData);
-      } catch (loadError) {
+        setLoading(false);
+      },
+      (loadError) => {
         console.error('Failed to load bookings:', loadError);
         setError('Could not load bookings from Firestore. Showing fallback data.');
         setBookings(bookingData);
-      } finally {
         setLoading(false);
       }
-    }
+    );
 
-    loadBookings();
+    return () => unsubscribe();
   }, []);
 
   const filteredBookings = useMemo(() => {

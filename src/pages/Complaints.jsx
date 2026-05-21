@@ -1,5 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
-import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import Badge from '../components/Badge.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -25,25 +25,26 @@ export default function Complaints() {
   }
 
   useEffect(() => {
-    async function loadComplaints() {
-      try {
-        const snapshot = await getDocs(collection(db, 'complaints'));
+    const unsubscribe = onSnapshot(
+      collection(db, 'complaints'),
+      (snapshot) => {
         const firestoreComplaints = snapshot.docs.map((complaintDoc) => ({
           ...complaintDoc.data(),
           id: complaintDoc.id,
         }));
 
         setComplaints(firestoreComplaints.length > 0 ? firestoreComplaints : complaintData);
-      } catch (loadError) {
+        setLoading(false);
+      },
+      (loadError) => {
         console.error('Failed to load complaints:', loadError);
         setError('Could not load complaints from Firestore. Showing fallback data.');
         setComplaints(complaintData);
-      } finally {
         setLoading(false);
       }
-    }
+    );
 
-    loadComplaints();
+    return () => unsubscribe();
   }, []);
 
   function applyComplaintUpdates(id, updates) {

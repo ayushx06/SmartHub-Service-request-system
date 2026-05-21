@@ -1,5 +1,5 @@
 import { CheckCircle2, FileText, XCircle } from 'lucide-react';
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader.jsx';
 import { providerRequests } from '../data/mockData.js';
@@ -18,9 +18,9 @@ export default function Providers() {
   const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
-    async function loadProviderRequests() {
-      try {
-        const snapshot = await getDocs(collection(db, 'providerRequests'));
+    const unsubscribe = onSnapshot(
+      collection(db, 'providerRequests'),
+      (snapshot) => {
         const firestoreRequests = snapshot.docs.map((requestDoc) => {
           const request = requestDoc.data();
 
@@ -32,16 +32,17 @@ export default function Providers() {
         });
 
         setRequests(firestoreRequests.length > 0 ? firestoreRequests : providerRequests);
-      } catch (loadError) {
+        setLoading(false);
+      },
+      (loadError) => {
         console.error('Failed to load provider requests:', loadError);
         setError('Could not load provider requests from Firestore. Showing fallback data.');
         setRequests(providerRequests);
-      } finally {
         setLoading(false);
       }
-    }
+    );
 
-    loadProviderRequests();
+    return () => unsubscribe();
   }, []);
 
   async function updateStatus(id, status) {
