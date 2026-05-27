@@ -1,7 +1,7 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarCheck, DollarSign, Users, Wrench } from 'lucide-react';
 import PageHeader from '../components/PageHeader.jsx';
-import StatCard from '../components/StatCard.jsx';
+import StatCard from '../components/StatCard.jsx';                                                                                                                                                                                                                                                                                                                                  
 import LoadingCard from '../components/LoadingCard.jsx';
 import { bookingAnalytics, recentActivities, stats } from '../data/mockData.js';
 import { useEffect, useState } from 'react';
