@@ -2,7 +2,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { CalendarCheck, Clock3, DollarSign, MessageSquareWarning, Users, Wrench } from 'lucide-react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import PageHeader from '../components/PageHeader.jsx';
-import StatCard from '../components/StatCard.jsx';                                                                                                                                                                                                                                                                                                                                  
+import StatCard from '../components/StatCard.jsx';
 import LoadingCard from '../components/LoadingCard.jsx';
 import { bookingAnalytics, complaints, providerRequests, recentActivities, stats } from '../data/mockData.js';
 import { useEffect, useState } from 'react';
