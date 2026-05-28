@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import AboutPage from "./pages/customer/AboutPage";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import BrowseServices from "./pages/customer/BrowseServices";
 import ServiceDetails from "./pages/customer/ServiceDetails";
@@ -9,7 +9,7 @@ import MyBookings from "./pages/customer/MyBookings";
 function App() {
   return (
     <BrowserRouter>
-      <Navbar />
+      
 
       <Routes>
         <Route path="/" element={<CustomerDashboard />} />
@@ -18,6 +18,7 @@ function App() {
         <Route path="/customer/service/:id" element={<ServiceDetails />} />
         <Route path="/customer/book/:id" element={<BookService />} />
         <Route path="/customer/bookings" element={<MyBookings />} />
+        <Route path="/customer/about" element={<AboutPage />} />
       </Routes>
     </BrowserRouter>
   );

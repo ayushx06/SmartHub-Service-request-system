@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
 import sampleServices from "../../data/sampleServices";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../../firebase";
 
 function BookService() {
   const { id } = useParams();
@@ -26,11 +28,15 @@ function BookService() {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
+    if (!service) {
+      setMessage("Service not found.");
+      return;
+    }
+
     const newBooking = {
-      id: Date.now(),
       serviceId: service.id,
       serviceTitle: service.title,
       providerName: service.providerName,
@@ -40,24 +46,25 @@ function BookService() {
       time: booking.time,
       notes: booking.notes,
       status: "Pending",
+      createdAt: serverTimestamp(),
     };
 
-    const existingBookings =
-      JSON.parse(localStorage.getItem("customerBookings")) || [];
+    try {
+      await addDoc(collection(db, "bookings"), newBooking);
 
-    const updatedBookings = [...existingBookings, newBooking];
+      setMessage("Booking request submitted successfully!");
 
-    localStorage.setItem("customerBookings", JSON.stringify(updatedBookings));
-
-    setMessage("Booking request submitted successfully!");
-
-    setBooking({
-      name: "",
-      email: "",
-      date: "",
-      time: "",
-      notes: "",
-    });
+      setBooking({
+        name: "",
+        email: "",
+        date: "",
+        time: "",
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Error saving booking:", error);
+      setMessage("Booking was not saved. Please try again.");
+    }
   }
 
   if (!service) {

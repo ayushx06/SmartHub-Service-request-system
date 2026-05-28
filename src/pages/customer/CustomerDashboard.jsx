@@ -23,17 +23,11 @@ function CustomerDashboard() {
       <main className="dashboard-main">
         {/* Top Bar */}
         <header className="topbar">
-          <input
-            type="text"
-            placeholder="Search taskers, services, bookings..."
-          />
+          
 
           <div className="user-profile">
-            <div className="avatar">CU</div>
-            <div>
-              <strong>Customer User</strong>
-              <p>Customer</p>
-            </div>
+            
+            
           </div>
         </header>
 
@@ -57,6 +51,9 @@ function CustomerDashboard() {
             <Link to="/customer/bookings">
               <button className="dark-btn">View My Tasks</button>
             </Link>
+            <Link to="/customer/about">
+  <button>About SmartHub</button>
+</Link>
           </div>
         </div>
       </main>

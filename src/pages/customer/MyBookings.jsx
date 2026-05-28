@@ -1,30 +1,64 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+} from "firebase/firestore";
+import { db } from "../../firebase";
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
+  const [message, setMessage] = useState("");
+
+  async function getBookings() {
+    try {
+      const bookingsQuery = query(
+        collection(db, "bookings"),
+        orderBy("createdAt", "desc")
+      );
+
+      const querySnapshot = await getDocs(bookingsQuery);
+
+      const savedBookings = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data(),
+      }));
+
+      setBookings(savedBookings);
+    } catch (error) {
+      console.error("Error loading bookings:", error);
+      setMessage("Could not load bookings.");
+    }
+  }
 
   useEffect(() => {
-    const savedBookings =
-      JSON.parse(localStorage.getItem("customerBookings")) || [];
-
-    setBookings(savedBookings);
+    getBookings();
   }, []);
 
-  function cancelBooking(id) {
-    const updatedBookings = bookings.map((booking) => {
-      if (booking.id === id) {
-        return {
-          ...booking,
-          status: "Cancelled",
-        };
-      }
+  async function cancelBooking(id) {
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
 
-      return booking;
-    });
+    if (!confirmCancel) {
+      return;
+    }
 
-    setBookings(updatedBookings);
-    localStorage.setItem("customerBookings", JSON.stringify(updatedBookings));
+    try {
+      await deleteDoc(doc(db, "bookings", id));
+
+      const updatedBookings = bookings.filter((booking) => booking.id !== id);
+
+      setBookings(updatedBookings);
+      setMessage("Booking cancelled and removed from database.");
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      setMessage("Could not cancel booking.");
+    }
   }
 
   return (
@@ -39,6 +73,8 @@ function MyBookings() {
           <button className="back-dashboard-btn">Back to Dashboard</button>
         </Link>
       </div>
+
+      {message && <p className="success-message">{message}</p>}
 
       {bookings.length === 0 ? (
         <div className="empty-booking-card">
