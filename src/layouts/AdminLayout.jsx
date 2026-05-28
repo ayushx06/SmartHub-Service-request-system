@@ -15,6 +15,7 @@ const navItems = [
 export default function AdminLayout() {
   // Mobile users open and close the sidebar without affecting desktop navigation.
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -60,7 +61,12 @@ export default function AdminLayout() {
             </button>
             <div className="hidden min-w-80 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900 md:flex">
               <Search className="h-4 w-4 text-slate-400" />
-              <span className="text-sm text-slate-500">Search bookings, users, complaints</span>
+              <input
+                className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500 dark:text-slate-200"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search bookings, users, complaints"
+              />
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -77,7 +83,7 @@ export default function AdminLayout() {
           </div>
         </header>
         <main className="p-4 sm:p-6">
-          <Outlet />
+          <Outlet context={{ searchQuery }} />
         </main>
       </div>
     </div>
