@@ -2,7 +2,6 @@ import {
   ArrowRight,
   CheckCircle2,
   ClipboardList,
-  Headphones,
   LayoutDashboard,
   LockKeyhole,
   Route,
@@ -77,29 +76,6 @@ const roles = [
   },
 ];
 
-const heroBadges = [
-  {
-    label: '24/7 Support',
-    icon: Headphones,
-    className: 'left-3 top-4 sm:-left-5 sm:top-10',
-  },
-  {
-    label: 'Verified Providers',
-    icon: ShieldCheck,
-    className: 'right-3 top-5 sm:-right-4 sm:top-16',
-  },
-  {
-    label: 'Live Tracking',
-    icon: Route,
-    className: 'bottom-20 left-4 sm:-left-3 sm:bottom-24',
-  },
-  {
-    label: 'Secure Platform',
-    icon: LockKeyhole,
-    className: 'bottom-5 right-4 sm:right-8 sm:bottom-8',
-  },
-];
-
 export default function Landing() {
   return (
     <main className="min-h-screen overflow-hidden bg-gradient-to-b from-white via-teal-50/40 to-white text-slate-950">
@@ -163,44 +139,13 @@ export default function Landing() {
             <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-emerald-200/50 blur-3xl" />
             <div className="absolute -bottom-10 -left-10 h-56 w-56 rounded-full bg-cyan-200/50 blur-3xl" />
 
-            <div className="relative mx-auto max-w-xl rounded-[2rem] border border-white/80 bg-white/55 p-3 shadow-soft backdrop-blur-xl sm:p-4">
-              <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-teal-600 via-emerald-500 to-cyan-500 p-1">
-                <div className="relative overflow-hidden rounded-[1.25rem] bg-white">
-                  <img
-                    className="aspect-[4/3] w-full object-cover object-center"
-                    src={serviceMarketplaceHero}
-                    alt="SmartHub service providers including an electrician, cleaner, plumber, technician, and support worker"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-white/10" />
-
-                  <div className="absolute left-4 right-4 top-4 rounded-2xl border border-white/70 bg-white/75 p-3 shadow-soft backdrop-blur-md sm:left-5 sm:right-auto sm:w-64">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">SmartHub Network</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-950">Trusted local service teams, coordinated in one secure place.</p>
-                  </div>
-                </div>
-              </div>
-
-              {heroBadges.map((badge) => (
-                <div
-                  key={badge.label}
-                  className={`absolute z-10 flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-soft backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:bg-white sm:text-sm ${badge.className}`}
-                >
-                  <span className="grid h-8 w-8 place-items-center rounded-xl bg-teal-50 text-teal-700">
-                    <badge.icon className="h-4 w-4" />
-                  </span>
-                  {badge.label}
-                </div>
-              ))}
-
-              <div className="absolute -bottom-7 left-1/2 hidden w-72 -translate-x-1/2 rounded-2xl border border-white/80 bg-white/70 p-3 shadow-soft backdrop-blur-xl sm:block">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                  <span>Request</span>
-                  <span>Assign</span>
-                  <span>Complete</span>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-teal-50">
-                  <div className="h-2 w-4/5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-400" />
-                </div>
+            <div className="relative mx-auto max-w-xl rounded-[2rem] border border-teal-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/80 p-3 shadow-soft sm:p-4">
+              <div className="overflow-hidden rounded-[1.5rem] border border-white bg-white shadow-sm">
+                <img
+                  className="aspect-[4/3] w-full object-cover object-center"
+                  src={serviceMarketplaceHero}
+                  alt="SmartHub service providers including an electrician, cleaner, plumber, technician, and support worker"
+                />
               </div>
             </div>
           </div>
