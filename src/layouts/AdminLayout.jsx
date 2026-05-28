@@ -1,21 +1,29 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { BarChart3, Bell, CalendarCheck, Gauge, Menu, MessageSquareWarning, Search, Settings, ShieldCheck, Users, X } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { BarChart3, Bell, CalendarCheck, Gauge, LogOut, Menu, MessageSquareWarning, Search, Settings, ShieldCheck, Users, X } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: Gauge },
-  { to: '/users', label: 'Users', icon: Users },
-  { to: '/providers', label: 'Providers', icon: ShieldCheck },
-  { to: '/bookings', label: 'Bookings', icon: CalendarCheck },
-  { to: '/complaints', label: 'Complaints', icon: MessageSquareWarning },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/admin', label: 'Dashboard', icon: Gauge },
+  { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/providers', label: 'Providers', icon: ShieldCheck },
+  { to: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
+  { to: '/admin/complaints', label: 'Complaints', icon: MessageSquareWarning },
+  { to: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function AdminLayout() {
   // Mobile users open and close the sidebar without affecting desktop navigation.
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const { logout, userProfile } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -76,10 +84,13 @@ export default function AdminLayout() {
             <div className="flex items-center gap-2">
               <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">AS</div>
               <div className="hidden text-sm sm:block">
-                <p className="font-semibold">Admin User</p>
+                <p className="font-semibold">{userProfile?.name || 'Admin User'}</p>
                 <p className="text-xs text-slate-500">Operations</p>
               </div>
             </div>
+            <button className="btn-muted p-2" onClick={handleLogout} aria-label="Logout">
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </header>
         <main className="p-4 sm:p-6">
