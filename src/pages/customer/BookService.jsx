@@ -1,80 +1,107 @@
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
-import sampleServices from "../../data/sampleServices";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 
-function BookService() {
+const services = [
+  {
+    id: 1,
+    icon: "🧹",
+    title: "House Cleaning",
+    category: "Cleaning",
+    provider: "CleanPro Services",
+    location: "Dunedin",
+    price: "$80",
+  },
+  {
+    id: 2,
+    icon: "🔧",
+    title: "Plumbing Repair",
+    category: "Plumbing",
+    provider: "QuickFix Plumbing",
+    location: "Dunedin",
+    price: "$120",
+  },
+  {
+    id: 3,
+    icon: "📚",
+    title: "Math Tutoring",
+    category: "Tutoring",
+    provider: "Smart Tutor NZ",
+    location: "Online / Dunedin",
+    price: "$50",
+  },
+  {
+    id: 4,
+    icon: "💻",
+    title: "Laptop Repair",
+    category: "Tech Support",
+    provider: "TechHelp Support",
+    location: "Dunedin",
+    price: "$90",
+  },
+];
+
+export default function BookService() {
   const { id } = useParams();
 
-  const service = sampleServices.find((service) => service.id === Number(id));
+  const service = services.find((item) => item.id === Number(id));
 
-  const [booking, setBooking] = useState({
-    name: "",
-    email: "",
-    date: "",
-    time: "",
-    notes: "",
-  });
-
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-
-    setBooking({
-      ...booking,
-      [name]: value,
-    });
-  }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!service) {
-      setMessage("Service not found.");
+    if (!customerName || !customerEmail || !date || !time) {
+      setMessage("Please fill in all required fields.");
       return;
     }
 
-    const newBooking = {
-      serviceId: service.id,
-      serviceTitle: service.title,
-      providerName: service.providerName,
-      customerName: booking.name,
-      customerEmail: booking.email,
-      date: booking.date,
-      time: booking.time,
-      notes: booking.notes,
-      status: "Pending",
-      createdAt: serverTimestamp(),
-    };
-
     try {
-      await addDoc(collection(db, "bookings"), newBooking);
-
-      setMessage("Booking request submitted successfully!");
-
-      setBooking({
-        name: "",
-        email: "",
-        date: "",
-        time: "",
-        notes: "",
+      await addDoc(collection(db, "bookings"), {
+        serviceId: service.id,
+        serviceTitle: service.title,
+        providerName: service.provider,
+        customerName,
+        customerEmail,
+        date,
+        time,
+        notes,
+        status: "Pending",
+        createdAt: serverTimestamp(),
       });
+
+      setMessage("Booking request sent successfully!");
+
+      setCustomerName("");
+      setCustomerEmail("");
+      setDate("");
+      setTime("");
+      setNotes("");
     } catch (error) {
-      console.error("Error saving booking:", error);
-      setMessage("Booking was not saved. Please try again.");
+      console.error("Error sending booking request:", error);
+      setMessage("Could not send booking request.");
     }
   }
 
   if (!service) {
     return (
-      <div className="booking-request-page">
-        <div className="booking-request-card">
-          <h1>Service Not Found</h1>
+      <div className="min-h-screen bg-emerald-50 px-6 py-10">
+        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center shadow-md">
+          <h1 className="text-2xl font-bold text-slate-900">
+            Service not found
+          </h1>
 
-          <Link to="/customer/services">
-            <button className="dark-btn">Back to Services</button>
+          <Link
+            to="/customer/services"
+            className="mt-6 inline-block rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white hover:bg-emerald-800"
+          >
+            Back to Services
           </Link>
         </div>
       </div>
@@ -82,120 +109,174 @@ function BookService() {
   }
 
   return (
-    <div className="booking-request-page">
-      <div className="booking-request-header">
-        <div>
-          <h1>Request This Tasker</h1>
-          <p>Fill in the details below to send your task request.</p>
-        </div>
-
-        <Link to="/customer/services">
-          <button className="back-dashboard-btn">Back to Services</button>
-        </Link>
-      </div>
-
-      <div className="booking-request-card">
-        <div className="booking-service-summary">
-          <div className="booking-service-icon">
-            {service.category.charAt(0)}
-          </div>
-
-          <div>
-            <h2>{service.title}</h2>
-            <p>{service.providerName}</p>
-          </div>
-        </div>
-
-        <div className="booking-summary-details">
-          <p>
-            <strong>Provider</strong>
-            <span>{service.providerName}</span>
-          </p>
-
-          <p>
-            <strong>Price</strong>
-            <span>${service.price}</span>
-          </p>
-        </div>
-
-        {message && <p className="success-message">{message}</p>}
-
-        <form onSubmit={handleSubmit} className="booking-form">
-          <div className="form-row">
-            <label>Your Name</label>
-            <input
-              type="text"
-              name="name"
-              value={booking.name}
-              onChange={handleChange}
-              placeholder="Enter your name"
-              required
-            />
-          </div>
-
-          <div className="form-row">
-            <label>Your Email</label>
-            <input
-              type="email"
-              name="email"
-              value={booking.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="form-two-columns">
-            <div className="form-row">
-              <label>Task Date</label>
-              <input
-                type="date"
-                name="date"
-                value={booking.date}
-                onChange={handleChange}
-                required
-              />
+    <div className="min-h-screen bg-emerald-50">
+      {/* Header */}
+      <header className="bg-emerald-800 px-6 py-8 text-white">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">SmartHub</h1>
+              <p className="text-emerald-100">Book a Service</p>
             </div>
 
-            <div className="form-row">
-              <label>Task Time</label>
-              <input
-                type="time"
-                name="time"
-                value={booking.time}
-                onChange={handleChange}
-                required
-              />
-            </div>
+            <Link
+              to="/customer/services"
+              className="rounded-lg bg-white px-4 py-2 font-semibold text-emerald-700 hover:bg-emerald-100"
+            >
+              Back to Services
+            </Link>
           </div>
 
-          <div className="form-row">
-            <label>Task Details</label>
-            <textarea
-              name="notes"
-              value={booking.notes}
-              onChange={handleChange}
-              placeholder="Write any special request..."
-            />
+          <div className="mt-10">
+            <h2 className="text-4xl font-bold">Request This Tasker</h2>
+
+            <p className="mt-3 max-w-2xl text-emerald-100">
+              Fill in your details below to send your booking request.
+            </p>
           </div>
-
-          <button type="submit" className="send-request-btn">
-            Send Task Request
-          </button>
-        </form>
-
-        <div className="booking-request-actions">
-          <Link to="/customer/services">
-            <button className="dark-btn">Back to Services</button>
-          </Link>
-
-          <Link to="/customer/bookings">
-            <button className="book-service-btn">View My Bookings</button>
-          </Link>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="px-6 py-10">
+        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3">
+          {/* Booking Form */}
+          <section className="rounded-2xl bg-white p-8 shadow-md lg:col-span-2">
+            {message && (
+              <div className="mb-6 rounded-xl bg-emerald-100 px-4 py-3 font-semibold text-emerald-800">
+                {message}
+              </div>
+            )}
+
+            <h3 className="text-2xl font-bold text-slate-900">
+              Booking Details
+            </h3>
+
+            <p className="mt-2 text-slate-600">
+              Enter your contact details and preferred task date.
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div>
+                <label className="mb-2 block font-semibold text-slate-700">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  placeholder="Enter your name"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block font-semibold text-slate-700">
+                  Your Email
+                </label>
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(event) => setCustomerEmail(event.target.value)}
+                  placeholder="Enter your email"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block font-semibold text-slate-700">
+                    Task Date
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(event) => setDate(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-semibold text-slate-700">
+                    Task Time
+                  </label>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(event) => setTime(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block font-semibold text-slate-700">
+                  Task Details
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Write any special request..."
+                  rows="5"
+                  className="w-full resize-none rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-emerald-700 px-6 py-3 font-bold text-white hover:bg-emerald-800"
+              >
+                Send Task Request
+              </button>
+            </form>
+          </section>
+
+          {/* Service Summary */}
+          <aside className="rounded-2xl bg-white p-8 shadow-md">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
+              {service.icon}
+            </div>
+
+            <h3 className="text-2xl font-bold text-slate-900">
+              {service.title}
+            </h3>
+
+            <p className="mt-1 font-semibold text-emerald-700">
+              {service.category}
+            </p>
+
+            <div className="mt-6 space-y-4 rounded-xl bg-emerald-50 p-5">
+              <div className="flex justify-between gap-4 border-b border-emerald-100 pb-3">
+                <span className="font-semibold text-slate-500">Provider</span>
+                <span className="text-right font-bold text-slate-900">
+                  {service.provider}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4 border-b border-emerald-100 pb-3">
+                <span className="font-semibold text-slate-500">Location</span>
+                <span className="text-right font-bold text-slate-900">
+                  {service.location}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4">
+                <span className="font-semibold text-slate-500">Price</span>
+                <span className="text-right font-bold text-slate-900">
+                  {service.price}
+                </span>
+              </div>
+            </div>
+
+            <Link
+              to="/customer/bookings"
+              className="mt-6 block rounded-lg border border-emerald-700 px-5 py-3 text-center font-semibold text-emerald-700 hover:bg-emerald-50"
+            >
+              View My Bookings
+            </Link>
+          </aside>
+        </div>
+      </main>
     </div>
   );
 }
-
-export default BookService;

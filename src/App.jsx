@@ -9,8 +9,6 @@ import MyBookings from "./pages/customer/MyBookings";
 function App() {
   return (
     <BrowserRouter>
-      
-
       <Routes>
         <Route path="/" element={<CustomerDashboard />} />
         <Route path="/customer/dashboard" element={<CustomerDashboard />} />
