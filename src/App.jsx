@@ -1,24 +1,21 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AboutPage from "./pages/customer/AboutPage";
-import CustomerDashboard from "./pages/customer/CustomerDashboard";
-import BrowseServices from "./pages/customer/BrowseServices";
-import ServiceDetails from "./pages/customer/ServiceDetails";
-import BookService from "./pages/customer/BookService";
-import MyBookings from "./pages/customer/MyBookings";
+
+import ServiceProviderDashboard from "./pages/serviceProvider/ServiceProviderDashboard";
+import AddService from "./pages/serviceProvider/AddService";
+import MyServices from "./pages/serviceProvider/MyServices";
+import ProviderBookings from "./pages/serviceProvider/ProviderBookings";
+import PastBookings from "./pages/serviceProvider/PastBookings";
 
 function App() {
   return (
     <BrowserRouter>
-      
-
       <Routes>
-        <Route path="/" element={<CustomerDashboard />} />
-        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-        <Route path="/customer/services" element={<BrowseServices />} />
-        <Route path="/customer/service/:id" element={<ServiceDetails />} />
-        <Route path="/customer/book/:id" element={<BookService />} />
-        <Route path="/customer/bookings" element={<MyBookings />} />
-        <Route path="/customer/about" element={<AboutPage />} />
+        <Route path="/" element={<ServiceProviderDashboard />} />
+        <Route path="/provider/dashboard" element={<ServiceProviderDashboard />} />
+        <Route path="/provider/add-service" element={<AddService />} />
+        <Route path="/provider/my-services" element={<MyServices />} />
+        <Route path="/provider/bookings" element={<ProviderBookings />} />
+        <Route path="/provider/past-bookings" element={<PastBookings />} />
       </Routes>
     </BrowserRouter>
   );
