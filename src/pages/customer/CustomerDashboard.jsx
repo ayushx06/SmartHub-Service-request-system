@@ -63,11 +63,11 @@ export default function CustomerDashboard() {
             {/* Top Bar */}
             <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="mb-2 inline-block rounded-full bg-brand-100 px-4 py-1 text-sm font-bold text-brand-700">
+                <p className="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-sm font-semibold text-brand-700">
                   Welcome back
                 </p>
 
-                <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
+                <h1 className="page-title">
                   Customer Dashboard
                 </h1>
 
@@ -77,13 +77,13 @@ export default function CustomerDashboard() {
                 </p>
               </div>
 
-              <div className="flex w-fit items-center gap-3 rounded-3xl bg-white px-5 py-4 shadow-lg">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 font-black text-brand-700">
+              <div className="panel flex w-fit items-center gap-3 px-5 py-4">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">
                   {initials}
                 </div>
 
                 <div>
-                  <p className="font-black text-slate-900">
+                  <p className="font-semibold text-slate-900">
                     {userProfile?.name || "Customer"}
                   </p>
                   <p className="text-sm text-slate-500">Customer</p>
@@ -98,14 +98,14 @@ export default function CustomerDashboard() {
             )}
 
             {/* Hero Card */}
-            <section className="overflow-hidden rounded-[32px] bg-brand-700 shadow-2xl">
+            <section className="panel overflow-hidden bg-brand-600">
               <div className="grid gap-8 p-8 text-white md:grid-cols-2 md:p-12">
                 <div>
-                  <span className="rounded-full bg-white/15 px-4 py-1 text-sm font-bold text-white/90">
+                  <span className="rounded-full bg-white/15 px-4 py-1 text-sm font-semibold text-white/90">
                     SmartHub Service Request System
                   </span>
 
-                  <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
+                  <h2 className="mt-5 text-4xl font-semibold leading-tight md:text-5xl">
                     Book reliable taskers in minutes
                   </h2>
 
@@ -117,54 +117,54 @@ export default function CustomerDashboard() {
                   <div className="mt-8 flex flex-col gap-4 sm:flex-row">
                     <Link
                       to="/customer/services"
-                      className="rounded-2xl bg-white px-6 py-3 text-center font-black text-brand-700 shadow-lg hover:bg-brand-50"
+                      className="btn bg-white px-6 py-3 text-center text-brand-700 hover:bg-brand-50"
                     >
                       Find a Tasker
                     </Link>
 
                     <Link
                       to="/customer/bookings"
-                      className="rounded-2xl border border-white/30 bg-white/10 px-6 py-3 text-center font-black text-white shadow-lg hover:bg-white/20"
+                      className="btn border border-white/30 bg-white/10 px-6 py-3 text-center text-white hover:bg-white/20"
                     >
                       View My Tasks
                     </Link>
                   </div>
                 </div>
 
-                <div className="rounded-3xl bg-white/10 p-6 backdrop-blur">
-                  <p className="mb-5 text-sm font-bold tracking-[0.25em] text-brand-100">
+                <div className="rounded-lg bg-white/10 p-6 backdrop-blur">
+                  <p className="mb-5 text-sm font-semibold uppercase tracking-wide text-brand-100">
                     QUICK SUMMARY
                   </p>
 
                   <div className="space-y-4">
-                    <div className="rounded-2xl bg-white/15 p-5">
+                    <div className="rounded-lg bg-white/15 p-5">
                       <p className="text-sm text-brand-100">
                         Available Services
                       </p>
-                      <h3 className="mt-1 text-4xl font-black">
+                      <h3 className="mt-1 text-4xl font-semibold">
                         {availableServices}
                       </h3>
                     </div>
 
-                    <div className="rounded-2xl bg-white/15 p-5">
+                    <div className="rounded-lg bg-white/15 p-5">
                       <p className="text-sm text-brand-100">My Bookings</p>
-                      <h3 className="mt-1 text-4xl font-black">
+                      <h3 className="mt-1 text-4xl font-semibold">
                         {totalBookings}
                       </h3>
                     </div>
 
-                    <div className="rounded-2xl bg-white/15 p-5">
+                    <div className="rounded-lg bg-white/15 p-5">
                       <p className="text-sm text-brand-100">
                         Pending Requests
                       </p>
-                      <h3 className="mt-1 text-4xl font-black">
+                      <h3 className="mt-1 text-4xl font-semibold">
                         {pendingRequests}
                       </h3>
                     </div>
 
-                    <div className="rounded-2xl bg-white/15 p-5">
+                    <div className="rounded-lg bg-white/15 p-5">
                       <p className="text-sm text-brand-100">In Progress</p>
-                      <h3 className="mt-1 text-4xl font-black">
+                      <h3 className="mt-1 text-4xl font-semibold">
                         {inProgressRequests}
                       </h3>
                     </div>
@@ -177,13 +177,13 @@ export default function CustomerDashboard() {
             <section className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
               <Link
                 to="/customer/services"
-                className="rounded-3xl bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl"
+                className="panel p-6 hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-3xl">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-2xl">
                   🔍
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900">
+                <h3 className="text-lg font-semibold text-slate-900">
                   Find Taskers
                 </h3>
 
@@ -194,13 +194,13 @@ export default function CustomerDashboard() {
 
               <Link
                 to="/customer/bookings"
-                className="rounded-3xl bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl"
+                className="panel p-6 hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-3xl">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-2xl">
                   📅
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900">
+                <h3 className="text-lg font-semibold text-slate-900">
                   My Tasks
                 </h3>
 
@@ -211,13 +211,13 @@ export default function CustomerDashboard() {
 
               <Link
                 to="/customer/about"
-                className="rounded-3xl bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl"
+                className="panel p-6 hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-3xl">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-2xl">
                   ℹ️
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900">
+                <h3 className="text-lg font-semibold text-slate-900">
                   About SmartHub
                 </h3>
 

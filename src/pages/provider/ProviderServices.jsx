@@ -105,12 +105,12 @@ export default function ProviderServices() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow sm:flex-row sm:items-center sm:justify-between">
+      <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
             My Services
           </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">
+          <h1 className="page-title mt-2">
             Active Service Listings
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -120,7 +120,7 @@ export default function ProviderServices() {
 
         <button
           onClick={() => setModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-700 px-4 py-3 font-semibold text-white hover:bg-indigo-800"
+          className="btn-primary px-4 py-3"
         >
           <Plus className="h-4 w-4" />
           Post New Service
@@ -140,14 +140,14 @@ export default function ProviderServices() {
       )}
 
       {loading ? (
-        <div className="rounded-lg bg-white p-6 text-center font-semibold text-slate-600 shadow">
+        <div className="panel p-6 text-center font-semibold text-slate-600">
           Loading...
         </div>
       ) : (
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {services.length === 0 ? (
-            <div className="rounded-lg bg-white p-8 text-center shadow md:col-span-2 xl:col-span-3">
-              <h2 className="text-2xl font-bold text-slate-950">
+            <div className="panel p-8 text-center md:col-span-2 xl:col-span-3">
+              <h2 className="text-2xl font-semibold text-slate-950">
                 No services posted yet
               </h2>
               <p className="mt-2 text-slate-500">
@@ -156,14 +156,14 @@ export default function ProviderServices() {
             </div>
           ) : (
             services.map((service) => (
-              <article key={service.id} className="rounded-lg bg-white p-5 shadow">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-2xl">
+              <article key={service.id} className="panel p-5">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-2xl">
                   {service.icon || "🛠️"}
                 </div>
-                <h2 className="text-xl font-bold text-slate-950">
+                <h2 className="text-lg font-semibold text-slate-950">
                   {service.title || "Untitled Service"}
                 </h2>
-                <p className="mt-1 font-semibold text-indigo-700">
+                <p className="mt-1 font-semibold text-brand-700">
                   {service.category || "General"}
                 </p>
                 <div className="mt-5 space-y-3 rounded-lg bg-slate-50 p-4 text-sm">
@@ -188,10 +188,10 @@ export default function ProviderServices() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4 py-8">
-          <section className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-2xl">
+          <section className="panel w-full max-w-2xl p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-slate-950">
+                <h2 className="text-2xl font-semibold text-slate-950">
                   Post New Service
                 </h2>
                 <p className="text-sm text-slate-500">
@@ -284,14 +284,14 @@ export default function ProviderServices() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                  className="btn-muted px-4 py-2"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-indigo-400"
+                  className="btn-primary px-4 py-2"
                 >
                   {submitting ? "Posting..." : "Post Service"}
                 </button>

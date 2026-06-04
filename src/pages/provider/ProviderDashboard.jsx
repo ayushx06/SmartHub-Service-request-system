@@ -74,7 +74,7 @@ export default function ProviderDashboard() {
       label: "Total Assigned Jobs",
       value: bookings.length,
       icon: BriefcaseBusiness,
-      color: "bg-indigo-100 text-indigo-700",
+      color: "bg-brand-50 text-brand-700",
     },
     {
       label: "Pending Jobs",
@@ -100,12 +100,12 @@ export default function ProviderDashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg bg-indigo-950 p-6 text-white shadow-lg">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-indigo-200">
+      <section className="panel bg-brand-600 p-6 text-white">
+        <p className="text-sm font-semibold uppercase tracking-wide text-brand-50">
           Provider Dashboard
         </p>
-        <h1 className="mt-3 text-3xl font-bold">Assigned Service Work</h1>
-        <p className="mt-2 max-w-2xl text-indigo-100">
+        <h1 className="mt-3 text-3xl font-semibold">Assigned Service Work</h1>
+        <p className="mt-2 max-w-2xl text-brand-50">
           Monitor new requests, active jobs, and completed service bookings.
         </p>
       </section>
@@ -117,14 +117,14 @@ export default function ProviderDashboard() {
       )}
 
       {loading ? (
-        <div className="rounded-lg bg-white p-6 text-center font-semibold text-slate-600 shadow">
+        <div className="panel p-6 text-center font-semibold text-slate-600">
           Loading...
         </div>
       ) : (
         <>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="rounded-lg bg-white p-5 shadow">
+              <div key={stat.label} className="panel p-5">
                 <div
                   className={`mb-4 flex h-11 w-11 items-center justify-center rounded-lg ${stat.color}`}
                 >
@@ -133,16 +133,16 @@ export default function ProviderDashboard() {
                 <p className="text-sm font-semibold text-slate-500">
                   {stat.label}
                 </p>
-                <p className="mt-1 text-3xl font-bold text-slate-950">
+                <p className="mt-1 text-3xl font-semibold text-slate-950">
                   {stat.value}
                 </p>
               </div>
             ))}
           </section>
 
-          <section className="rounded-lg bg-white p-5 shadow">
+          <section className="panel p-5">
             <div className="mb-5">
-              <h2 className="text-xl font-bold text-slate-950">
+              <h2 className="text-lg font-semibold text-slate-950">
                 Recent Bookings
               </h2>
               <p className="text-sm text-slate-500">

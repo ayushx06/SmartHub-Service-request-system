@@ -90,11 +90,11 @@ export default function ProviderBookings() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg bg-white p-5 shadow">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">
+      <section className="panel p-5">
+        <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
           Bookings
         </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-950">
+        <h1 className="page-title mt-2">
           Assigned Customer Requests
         </h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -115,11 +115,11 @@ export default function ProviderBookings() {
       )}
 
       {loading ? (
-        <div className="rounded-lg bg-white p-6 text-center font-semibold text-slate-600 shadow">
+        <div className="panel p-6 text-center font-semibold text-slate-600">
           Loading...
         </div>
       ) : (
-        <section className="rounded-lg bg-white p-5 shadow">
+        <section className="panel p-5">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -176,7 +176,7 @@ export default function ProviderBookings() {
                               booking.status === "In Progress" ||
                               booking.status === "Completed"
                             }
-                            className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                            className="btn-primary px-3 py-2 text-xs"
                           >
                             Mark In Progress
                           </button>
@@ -186,7 +186,7 @@ export default function ProviderBookings() {
                               updatingId === booking.id ||
                               booking.status === "Completed"
                             }
-                            className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300"
+                            className="btn-primary px-3 py-2 text-xs"
                           >
                             Mark Completed
                           </button>
