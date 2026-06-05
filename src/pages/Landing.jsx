@@ -1,5 +1,5 @@
 import { collection, limit, orderBy, query, where } from 'firebase/firestore';
-import { ArrowRight, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Search, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ServiceCard from '../components/ServiceCard.jsx';
@@ -31,35 +31,18 @@ export default function Landing() {
         </div>
       </header>
 
-      <section className="relative overflow-hidden bg-ink text-white">
+      <section className="relative flex min-h-[560px] items-center overflow-hidden bg-ink text-white sm:min-h-[640px]">
         <div className="absolute inset-0 bg-[url('/src/assets/service-marketplace-hero.png')] bg-cover bg-center opacity-25" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
-          <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-brand-100">
-              <Sparkles className="h-4 w-4" /> Auckland services, student-friendly flow
-            </p>
-            <h1 className="mt-5 text-4xl font-bold tracking-normal sm:text-6xl">SmartHub Service Marketplace</h1>
-            <p className="mt-5 text-lg leading-8 text-slate-100">
+        <div className="absolute inset-0 bg-ink/35" />
+        <div className="relative mx-auto flex max-w-7xl justify-center px-4 py-24 text-center sm:px-6 sm:py-28 lg:py-32">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl font-bold tracking-normal sm:text-6xl">SmartHub Service Marketplace</h1>
+            <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-100 sm:text-xl sm:leading-9">
               Find verified Auckland providers for cleaning, tutoring, repairs, events, moving help, and everyday tasks.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link className="btn-primary bg-white text-ink hover:bg-brand-50" to="/services">Explore services <ArrowRight className="h-4 w-4" /></Link>
-              <Link className="btn-muted border-white/20 bg-white/10 text-white hover:bg-white/15" to="/provider-signup">Become a provider</Link>
-            </div>
-          </div>
-
-          <div className="self-end rounded-lg border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                ['10%', 'admin commission'],
-                ['Live', 'Firestore data'],
-                ['NZ', 'Auckland focus'],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-lg bg-white p-4 text-ink">
-                  <p className="text-2xl font-bold">{value}</p>
-                  <p className="text-sm text-slate-600">{label}</p>
-                </div>
-              ))}
+            <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
+              <Link className="btn-primary bg-white px-5 py-3 text-ink hover:bg-brand-50" to="/services">Explore services <ArrowRight className="h-4 w-4" /></Link>
+              <Link className="btn-muted border-white/20 bg-white/10 px-5 py-3 text-white hover:bg-white/15" to="/provider-signup">Become a provider</Link>
             </div>
           </div>
         </div>
