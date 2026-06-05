@@ -1,16 +1,16 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Bell, CalendarCheck, Gauge, LogOut, Menu, MessageSquareWarning, Search, Settings, ShieldCheck, Users, X } from 'lucide-react';
+import { Bell, CalendarCheck, FolderTree, Gauge, HandCoins, LogOut, Menu, Search, ShieldCheck, Store, Users, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const navItems = [
   { to: '/admin', label: 'Dashboard', icon: Gauge },
+  { to: '/admin/provider-requests', label: 'Provider Requests', icon: ShieldCheck },
   { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/providers', label: 'Providers', icon: ShieldCheck },
+  { to: '/admin/categories', label: 'Categories', icon: FolderTree },
+  { to: '/admin/services', label: 'Services', icon: Store },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
-  { to: '/admin/complaints', label: 'Complaints', icon: MessageSquareWarning },
-  { to: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/earnings', label: 'Commissions', icon: HandCoins },
 ];
 
 export default function AdminLayout() {
@@ -19,7 +19,7 @@ export default function AdminLayout() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const { logout, userProfile } = useAuth();
-  const initials = (userProfile?.name || 'A').split(' ').map((namePart) => namePart[0]).join('').slice(0, 2).toUpperCase();
+  const initials = (userProfile?.fullName || 'A').split(' ').map((namePart) => namePart[0]).join('').slice(0, 2).toUpperCase();
 
   async function handleLogout() {
     await logout();
@@ -74,7 +74,7 @@ export default function AdminLayout() {
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500 dark:text-slate-200"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search bookings, users, complaints"
+                placeholder="Search bookings, users, services"
               />
             </div>
           </div>
@@ -85,7 +85,7 @@ export default function AdminLayout() {
             <div className="flex items-center gap-2">
               <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">{initials}</div>
               <div className="hidden text-sm sm:block">
-                <p className="font-semibold">{userProfile?.name || 'Admin User'}</p>
+                <p className="font-semibold">{userProfile?.fullName || 'Admin User'}</p>
                 <p className="text-xs text-slate-500">Operations</p>
               </div>
             </div>

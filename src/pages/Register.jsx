@@ -1,96 +1,67 @@
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { auth, db } from '../firebase.js';
 
 export default function Register() {
+  const { registerUser } = useAuth();
   const navigate = useNavigate();
-  const { refreshProfile } = useAuth();
-  const [form, setForm] = useState({
-    email: '',
-    name: '',
-    password: '',
-    role: 'user',
-  });
+  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  function updateField(event) {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
-  }
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setSubmitting(true);
     setError('');
-    setLoading(true);
 
     try {
-      const role = form.role === 'provider' ? 'provider' : 'user';
-      const credential = await createUserWithEmailAndPassword(auth, form.email, form.password);
-
-      await updateProfile(credential.user, { displayName: form.name });
-      await setDoc(doc(db, 'users', credential.user.uid), {
-        createdAt: serverTimestamp(),
-        email: form.email,
-        name: form.name,
-        role,
-        status: 'active',
-      });
-      await refreshProfile();
-
-      navigate(role === 'provider' ? '/provider' : '/user', { replace: true });
-    } catch (registerError) {
-      console.error('Registration failed:', registerError);
-      setError('Could not create your account. Please check your details and try again.');
+      await registerUser(form);
+      navigate('/user/dashboard', { replace: true });
+    } catch (signupError) {
+      setError(signupError.message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-50 px-4 py-10 dark:bg-slate-950">
-      <section className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <Link className="text-2xl font-bold text-brand-700 dark:text-brand-300" to="/">SmartHub</Link>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Create a user or provider account.</p>
+    <main className="grid min-h-screen place-items-center bg-slate-50 px-4 py-10">
+      <form onSubmit={handleSubmit} className="panel w-full max-w-lg space-y-5 p-6">
+        <div>
+          <Link to="/" className="text-xl font-bold text-brand-700">SmartHub</Link>
+          <h1 className="mt-5 text-2xl font-bold text-slate-950">Create customer account</h1>
+          <p className="muted mt-1">Customers can search Auckland services, book providers, and review completed work.</p>
         </div>
 
-        <form className="panel space-y-4 p-6" onSubmit={handleSubmit}>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium" htmlFor="name">Name</label>
-            <input className="input" id="name" name="name" value={form.name} onChange={updateField} required />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium" htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" value={form.email} onChange={updateField} required />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium" htmlFor="password">Password</label>
-            <input className="input" id="password" name="password" type="password" value={form.password} onChange={updateField} minLength={6} required />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium" htmlFor="role">Role</label>
-            <select className="input" id="role" name="role" value={form.role} onChange={updateField}>
-              <option value="user">User</option>
-              <option value="provider">Provider</option>
-            </select>
-          </div>
+        {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
-          {error && <p className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700 dark:bg-rose-950 dark:text-rose-300">{error}</p>}
+        <label className="block space-y-1 text-sm font-medium">
+          <span>Full name</span>
+          <input className="input" required value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} />
+        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block space-y-1 text-sm font-medium">
+            <span>Email</span>
+            <input className="input" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+          </label>
+          <label className="block space-y-1 text-sm font-medium">
+            <span>Phone</span>
+            <input className="input" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+          </label>
+        </div>
+        <label className="block space-y-1 text-sm font-medium">
+          <span>Password</span>
+          <input className="input" type="password" minLength={6} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+        </label>
 
-          <button className="btn-primary w-full" type="submit" disabled={loading}>
-            <UserPlus className="h-4 w-4" />
-            {loading ? 'Creating account...' : 'Register'}
-          </button>
+        <button className="btn-primary w-full" disabled={submitting}>
+          <UserPlus className="h-4 w-4" />
+          {submitting ? 'Creating account...' : 'Create account'}
+        </button>
 
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-            Already have an account? <Link className="font-semibold text-brand-700 dark:text-brand-300" to="/login">Login</Link>
-          </p>
-        </form>
-      </section>
+        <p className="text-sm text-slate-600">Want to offer services? <Link className="font-semibold text-brand-700" to="/provider-signup">Register as a provider</Link></p>
+      </form>
     </main>
   );
 }

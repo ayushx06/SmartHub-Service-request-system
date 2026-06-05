@@ -1,265 +1,47 @@
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  query,
-  orderBy,
-  onSnapshot,
-} from "firebase/firestore";
-import { db } from "../../firebase";
-import { useAuth } from "../../context/AuthContext";
+import { collection, orderBy, query, where } from 'firebase/firestore';
+import { useMemo } from 'react';
+import Badge from '../../components/Badge.jsx';
+import EmptyState from '../../components/EmptyState.jsx';
+import useFirestoreQuery from '../../hooks/useFirestoreQuery.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { db } from '../../firebase.js';
 
-function MyBookings() {
-  const { currentUser } = useAuth();
-  const [bookings, setBookings] = useState([]);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!currentUser?.uid) {
-      return undefined;
-    }
-
-    const bookingsQuery = query(
-      collection(db, "bookings"),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      bookingsQuery,
-      (snapshot) => {
-        const savedBookings = snapshot.docs
-          .map((document) => ({
-            id: document.id,
-            ...document.data(),
-          }))
-          .filter((booking) => booking.userId === currentUser.uid);
-
-        setBookings(savedBookings);
-        setLoading(false);
-        setError("");
-      },
-      (loadError) => {
-        console.error("Error loading bookings:", loadError);
-        setError("Could not load bookings.");
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [currentUser?.uid]);
-
-  async function cancelBooking(id) {
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this booking?"
-    );
-
-    if (!confirmCancel) {
-      return;
-    }
-
-    try {
-      await deleteDoc(doc(db, "bookings", id));
-
-      const updatedBookings = bookings.filter((booking) => booking.id !== id);
-
-      setBookings(updatedBookings);
-      setMessage("Booking cancelled and removed from database.");
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-      setMessage("Could not cancel booking.");
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-brand-50">
-      {/* Header */}
-      <header className="bg-brand-800 px-6 py-8 text-white">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">SmartHub</h1>
-              <p className="text-brand-100">Customer Bookings</p>
-            </div>
-
-            <Link
-              to="/customer/dashboard"
-              className="rounded-lg bg-white px-4 py-2 font-semibold text-brand-700 hover:bg-brand-100"
-            >
-              Back to Dashboard
-            </Link>
-          </div>
-
-          <div className="mt-10">
-            <h2 className="text-4xl font-bold">My Tasks</h2>
-
-            <p className="mt-3 max-w-2xl text-brand-100">
-              View and manage your tasker bookings.
-            </p>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="px-6 py-10">
-        <div className="mx-auto max-w-6xl">
-          {message && (
-            <div className="mb-6 rounded-xl bg-brand-100 px-4 py-3 font-semibold text-brand-800">
-              {message}
-            </div>
-          )}
-
-          {error && (
-            <div className="mb-6 rounded-xl bg-red-100 px-4 py-3 font-semibold text-red-700">
-              {error}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center font-semibold text-slate-600 shadow-md">
-              Loading...
-            </div>
-          ) : bookings.length === 0 ? (
-            <div className="mx-auto max-w-xl rounded-2xl bg-white p-10 text-center shadow-md">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-3xl">
-                📅
-              </div>
-
-              <h2 className="text-3xl font-bold text-slate-900">
-                No bookings yet
-              </h2>
-
-              <p className="mt-3 text-slate-600">
-                You have not made any bookings yet.
-              </p>
-
-              <Link
-                to="/customer/services"
-                className="mt-6 inline-block rounded-lg bg-brand-700 px-6 py-3 font-semibold text-white hover:bg-brand-800"
-              >
-                Browse Services
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {bookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="rounded-2xl bg-white p-6 shadow-md"
-                >
-                  <div className="mb-6 flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-                      {(booking.serviceName || booking.serviceTitle)?.charAt(0) || "T"}
-                    </div>
-
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">
-                        {booking.serviceName || booking.serviceTitle}
-                      </h2>
-                      <p className="font-semibold text-brand-700">
-                        {booking.providerName}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 rounded-xl bg-brand-50 p-5">
-                    <div className="flex justify-between gap-4 border-b border-brand-100 pb-3">
-                      <span className="font-semibold text-slate-500">
-                        Customer
-                      </span>
-                      <span className="text-right font-bold text-slate-900">
-                        {booking.userName || booking.customerName}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between gap-4 border-b border-brand-100 pb-3">
-                      <span className="font-semibold text-slate-500">
-                        Email
-                      </span>
-                      <span className="max-w-[60%] break-words text-right font-bold text-slate-900">
-                        {booking.customerEmail || "Not provided"}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between gap-4 border-b border-brand-100 pb-3">
-                      <span className="font-semibold text-slate-500">
-                        Task Date
-                      </span>
-                      <span className="text-right font-bold text-slate-900">
-                        {booking.date}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between gap-4 border-b border-brand-100 pb-3">
-                      <span className="font-semibold text-slate-500">
-                        Task Time
-                      </span>
-                      <span className="text-right font-bold text-slate-900">
-                        {booking.time || "Not set"}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between gap-4 border-b border-brand-100 pb-3">
-                      <span className="font-semibold text-slate-500">
-                        Details
-                      </span>
-                      <span className="max-w-[60%] text-right font-bold text-slate-900">
-                        {booking.notes || "No notes"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="font-semibold text-slate-500">
-                        Status
-                      </span>
-
-                      <span
-                        className={
-                          booking.status === "Cancelled"
-                            ? "rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700"
-                            : "rounded-full bg-yellow-100 px-3 py-1 text-sm font-bold text-yellow-700"
-                        }
-                      >
-                        {booking.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {booking.status !== "Cancelled" && (
-                    <button
-                      onClick={() => cancelBooking(booking.id)}
-                      className="mt-6 w-full rounded-lg bg-red-600 px-5 py-3 font-semibold text-white hover:bg-red-700"
-                    >
-                      Cancel Booking
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-            <Link
-              to="/customer/services"
-              className="rounded-lg bg-brand-700 px-6 py-3 text-center font-semibold text-white hover:bg-brand-800"
-            >
-              Browse More Services
-            </Link>
-
-            <Link
-              to="/customer/dashboard"
-              className="rounded-lg bg-brand-900 px-6 py-3 text-center font-semibold text-white hover:bg-brand-950"
-            >
-              Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+function label(status = '') {
+  return status.replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
-export default MyBookings;
+export default function MyBookings() {
+  const { userProfile } = useAuth();
+  const bookingsQuery = useMemo(() => query(collection(db, 'bookings'), where('userId', '==', userProfile.uid), orderBy('createdAt', 'desc')), [userProfile.uid]);
+  const { items: bookings } = useFirestoreQuery(bookingsQuery, [userProfile.uid]);
+
+  return (
+    <section className="space-y-6 px-4 py-6 sm:px-6">
+      <div>
+        <h1 className="page-title">My bookings</h1>
+        <p className="muted mt-1">See provider responses, completion status, and payment method.</p>
+      </div>
+
+      <div className="panel overflow-hidden">
+        <div className="grid grid-cols-12 gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase text-slate-500">
+          <span className="col-span-5">Service</span>
+          <span className="col-span-2">Price</span>
+          <span className="col-span-3">Payment</span>
+          <span className="col-span-2">Status</span>
+        </div>
+        {bookings.map((booking) => (
+          <div key={booking.id} className="grid grid-cols-12 gap-3 border-b border-slate-100 px-5 py-4 text-sm last:border-0">
+            <div className="col-span-12 sm:col-span-5">
+              <p className="font-semibold text-slate-950">{booking.serviceTitle}</p>
+              <p className="text-slate-500">Provider net ${Number(booking.providerEarning || 0).toFixed(2)}</p>
+            </div>
+            <p className="col-span-4 sm:col-span-2">${Number(booking.servicePrice || 0).toFixed(2)}</p>
+            <p className="col-span-5 sm:col-span-3">{booking.paymentMethod}</p>
+            <div className="col-span-3 sm:col-span-2"><Badge>{label(booking.bookingStatus)}</Badge></div>
+          </div>
+        ))}
+        {!bookings.length && <div className="p-5"><EmptyState title="No bookings found" message="Your service bookings will appear here." /></div>}
+      </div>
+    </section>
+  );
+}

@@ -1,172 +1,41 @@
-import { Eye } from 'lucide-react';
-import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { useEffect, useMemo, useState } from 'react';
+import { collection, orderBy, query } from 'firebase/firestore';
+import { useMemo } from 'react';
 import Badge from '../components/Badge.jsx';
-import Modal from '../components/Modal.jsx';
-import PageHeader from '../components/PageHeader.jsx';
-import { bookings as bookingData } from '../data/mockData.js';
+import EmptyState from '../components/EmptyState.jsx';
+import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
 import { db } from '../firebase.js';
 
-function getBookingCustomer(booking) {
-  return booking.customerName || booking.customer || '';
-}
-
-function getBookingProvider(booking) {
-  return booking.providerName || booking.provider || '';
-}
-
-function getBookingDetailValue(value) {
-  if (value?.toDate) {
-    return value.toDate().toLocaleString();
-  }
-
-  if (value?.seconds) {
-    return new Date(value.seconds * 1000).toLocaleString();
-  }
-
-  return value;
+function label(status = '') {
+  return status.replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
 export default function Bookings() {
-  const [bookings, setBookings] = useState([]);
-  const [status, setStatus] = useState('All');
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [updatingId, setUpdatingId] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'bookings'),
-      (snapshot) => {
-        const firestoreBookings = snapshot.docs.map((bookingDoc) => ({
-          ...bookingDoc.data(),
-          id: bookingDoc.id,
-        }));
-
-        setBookings(firestoreBookings.length > 0 ? firestoreBookings : bookingData);
-        setLoading(false);
-      },
-      (loadError) => {
-        console.error('Failed to load bookings:', loadError);
-        setError('Could not load bookings from Firestore. Showing fallback data.');
-        setBookings(bookingData);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => status === 'All' || booking.status === status);
-  }, [bookings, status]);
-
-  function applyBookingUpdates(id, updates) {
-    setBookings((current) => current.map((booking) => (booking.id === id ? { ...booking, ...updates } : booking)));
-    setSelectedBooking((current) => (current?.id === id ? { ...current, ...updates } : current));
-  }
-
-  async function updateBookingStatus(id, nextStatus) {
-    const previousBookings = bookings;
-    const previousSelectedBooking = selectedBooking;
-
-    applyBookingUpdates(id, { status: nextStatus });
-    setUpdatingId(id);
-    setError('');
-
-    try {
-      await updateDoc(doc(db, 'bookings', String(id)), { status: nextStatus });
-    } catch (updateError) {
-      console.error('Failed to update booking status:', updateError);
-      setError('Could not update booking status in Firestore. Please try again.');
-      setBookings(previousBookings);
-      setSelectedBooking(previousSelectedBooking);
-    } finally {
-      setUpdatingId(null);
-    }
-  }
+  const bookingsQuery = useMemo(() => query(collection(db, 'bookings'), orderBy('createdAt', 'desc')), []);
+  const { items: bookings } = useFirestoreQuery(bookingsQuery, []);
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Booking Management" description="Track all service requests and inspect booking details." />
-
-      <div className="panel p-4">
-        <select className="input max-w-xs" value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option>All</option>
-          <option>Pending</option>
-          <option>In Progress</option>
-          <option>Completed</option>
-          <option>Cancelled</option>
-        </select>
+    <section className="space-y-6">
+      <div>
+        <h1 className="page-title">All bookings</h1>
+        <p className="muted mt-1">Track customer requests, provider earnings, and booking status.</p>
       </div>
-
-      {loading && (
-        <div className="panel p-5 text-sm font-medium text-slate-600 dark:text-slate-300">
-          Loading bookings...
-        </div>
-      )}
-
-      {error && (
-        <div className="panel border-rose-200 bg-rose-50 p-5 text-sm font-medium text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300">
-          {error}
-        </div>
-      )}
 
       <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="bg-slate-100 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              <tr>
-                <th className="px-5 py-3">Booking ID</th>
-                <th className="px-5 py-3">Customer</th>
-                <th className="px-5 py-3">Provider</th>
-                <th className="px-5 py-3">Service</th>
-                <th className="px-5 py-3">Amount</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                  <td className="px-5 py-4 font-semibold">{booking.id}</td>
-                  <td className="px-5 py-4">{getBookingCustomer(booking)}</td>
-                  <td className="px-5 py-4">{getBookingProvider(booking)}</td>
-                  <td className="px-5 py-4">{booking.service}</td>
-                  <td className="px-5 py-4">${booking.amount}</td>
-                  <td className="px-5 py-4"><Badge>{booking.status}</Badge></td>
-                  <td className="px-5 py-4">
-                    <button className="btn-muted" onClick={() => setSelectedBooking(booking)}><Eye className="h-4 w-4" />View</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {selectedBooking && (
-        <Modal title={`Booking ${selectedBooking.id}`} onClose={() => setSelectedBooking(null)}>
-          <div className="grid gap-3 text-sm">
-            {Object.entries(selectedBooking).map(([key, value]) => (
-              <div key={key} className="flex justify-between gap-4 rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
-                <span className="font-medium capitalize text-slate-500">{key}</span>
-                {key === 'status' ? (
-                  <select className="input max-w-[180px]" value={selectedBooking.status} onChange={(event) => updateBookingStatus(selectedBooking.id, event.target.value)} disabled={updatingId === selectedBooking.id}>
-                    <option>Pending</option>
-                    <option>In Progress</option>
-                    <option>Completed</option>
-                    <option>Cancelled</option>
-                  </select>
-                ) : (
-                  <span className="text-right">{getBookingDetailValue(value)}</span>
-                )}
-              </div>
-            ))}
+        {bookings.map((booking) => (
+          <div key={booking.id} className="grid gap-3 border-b border-slate-100 p-5 last:border-0 xl:grid-cols-[1.2fr_1fr_150px_120px] xl:items-center">
+            <div>
+              <p className="font-semibold text-slate-950">{booking.serviceTitle}</p>
+              <p className="muted">Customer: {booking.userName}</p>
+            </div>
+            <p className="text-sm text-slate-600">
+              Total ${Number(booking.servicePrice || 0).toFixed(2)} | Commission ${Number(booking.commissionAmount || 0).toFixed(2)} | Provider ${Number(booking.providerEarning || 0).toFixed(2)}
+            </p>
+            <p className="text-sm">{booking.paymentMethod}</p>
+            <Badge>{label(booking.bookingStatus)}</Badge>
           </div>
-        </Modal>
-      )}
-    </div>
+        ))}
+        {!bookings.length && <div className="p-5"><EmptyState title="No bookings" message="Bookings created by customers will appear here." /></div>}
+      </div>
+    </section>
   );
 }

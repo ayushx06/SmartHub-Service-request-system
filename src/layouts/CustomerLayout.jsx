@@ -12,10 +12,10 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const navItems = [
-  { to: '/customer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/customer/services', label: 'Find Taskers', icon: Search },
-  { to: '/customer/bookings', label: 'My Tasks', icon: CalendarCheck },
-  { to: '/customer/about', label: 'About SmartHub', icon: Info },
+  { to: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/user/services', label: 'Find Services', icon: Search },
+  { to: '/user/bookings', label: 'My Bookings', icon: CalendarCheck },
+  { to: '/', label: 'Public Home', icon: Info },
 ];
 
 export default function CustomerLayout() {
@@ -28,7 +28,7 @@ export default function CustomerLayout() {
     navigate('/login', { replace: true });
   }
 
-  const initials = (userProfile?.name || 'U')
+  const initials = (userProfile?.fullName || 'U')
     .split(' ')
     .map((namePart) => namePart[0])
     .join('')
@@ -84,7 +84,7 @@ export default function CustomerLayout() {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-slate-950">
-                {userProfile?.name || 'Customer'}
+                {userProfile?.fullName || 'Customer'}
               </p>
               <p className="text-xs text-slate-500">Customer</p>
             </div>

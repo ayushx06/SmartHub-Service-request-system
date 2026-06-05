@@ -2,9 +2,11 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   BriefcaseBusiness,
   CalendarCheck,
+  DollarSign,
   Gauge,
   LogOut,
   Menu,
+  PlusCircle,
   UserCircle,
   X,
 } from "lucide-react";
@@ -14,7 +16,9 @@ import { useAuth } from "../context/AuthContext";
 const navItems = [
   { to: "/provider", label: "Dashboard", icon: Gauge, end: true },
   { to: "/provider/services", label: "My Services", icon: BriefcaseBusiness },
+  { to: "/provider/services/new", label: "Post Service", icon: PlusCircle },
   { to: "/provider/bookings", label: "Bookings", icon: CalendarCheck },
+  { to: "/provider/earnings", label: "Earnings", icon: DollarSign },
   { to: "/provider/profile", label: "Profile", icon: UserCircle },
 ];
 
@@ -104,7 +108,7 @@ export default function ProviderLayout() {
                 Provider Workspace
               </p>
               <p className="text-lg font-bold text-slate-950">
-                {userProfile?.name || "Service Provider"}
+                {userProfile?.businessName || userProfile?.fullName || "Service Provider"}
               </p>
             </div>
           </div>
