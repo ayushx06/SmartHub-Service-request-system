@@ -11,8 +11,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from '../firebase.js';
+import { db } from '../firebase.js';
 
 export const commissionRate = 0.1;
 
@@ -22,16 +21,6 @@ export function collectionQuery(name, constraints = []) {
 
 export function activeServicesQuery() {
   return query(collection(db, 'services'), where('status', '==', 'active'), orderBy('createdAt', 'desc'));
-}
-
-export async function uploadServiceImages(providerId, files) {
-  const uploads = Array.from(files || []).map(async (file) => {
-    const path = `services/${providerId}/${Date.now()}-${file.name}`;
-    const snapshot = await uploadBytes(ref(storage, path), file);
-    return getDownloadURL(snapshot.ref);
-  });
-
-  return Promise.all(uploads);
 }
 
 export async function createBooking({ service, user, paymentMethod }) {

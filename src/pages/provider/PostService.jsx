@@ -3,7 +3,6 @@ import { UploadCloud } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useFirestoreQuery from '../../hooks/useFirestoreQuery.js';
-import { uploadServiceImages } from '../../lib/firestore.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { db } from '../../firebase.js';
 
@@ -12,19 +11,25 @@ export default function PostService() {
   const navigate = useNavigate();
   const categoriesQuery = useMemo(() => query(collection(db, 'categories'), where('active', '==', true), orderBy('name')), []);
   const { items: categories } = useFirestoreQuery(categoriesQuery, []);
-  const [form, setForm] = useState({ title: '', description: '', categoryId: '', price: '', location: '' });
-  const [files, setFiles] = useState([]);
+  const [form, setForm] = useState({ title: '', description: '', categoryId: '', price: '', location: '', imageUrl: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setSubmitting(true);
     setError('');
+
+    const imageUrl = form.imageUrl.trim();
+
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      setError('Please enter a valid image URL.');
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
       const category = categories.find((item) => item.id === form.categoryId);
-      const imageUrls = await uploadServiceImages(userProfile.uid, files);
       await addDoc(collection(db, 'services'), {
         providerId: userProfile.uid,
         providerName: userProfile.businessName || userProfile.fullName,
@@ -34,7 +39,7 @@ export default function PostService() {
         categoryName: category?.name || '',
         price: Number(form.price),
         location: form.location,
-        imageUrls,
+        imageUrls: imageUrl ? [imageUrl] : [],
         status: 'active',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -51,7 +56,7 @@ export default function PostService() {
     <section className="space-y-6">
       <div>
         <h1 className="page-title">Post service</h1>
-        <p className="muted mt-1">Approved providers can publish services with Firebase Storage images.</p>
+        <p className="muted mt-1">Approved providers can publish services with image URLs.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="panel max-w-3xl space-y-5 p-6">
@@ -82,9 +87,14 @@ export default function PostService() {
           </label>
         </div>
         <label className="block space-y-1 text-sm font-medium">
-          <span>Service images</span>
-          <input className="input" type="file" multiple accept="image/*" onChange={(event) => setFiles(event.target.files)} />
+          <span>Image URL</span>
+          <input className="input" placeholder="Paste Cloudinary image URL here" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
         </label>
+        {form.imageUrl.trim() ? (
+          <img className="h-40 w-full rounded-lg object-cover" src={form.imageUrl.trim()} alt="Service preview" />
+        ) : (
+          <div className="flex h-40 items-center justify-center rounded-lg bg-slate-50 text-sm text-slate-500">Image preview</div>
+        )}
         <button className="btn-primary" disabled={submitting}>
           <UploadCloud className="h-4 w-4" />
           {submitting ? 'Publishing...' : 'Publish service'}
