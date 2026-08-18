@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Bell, CalendarCheck, FolderTree, Gauge, HandCoins, LogOut, Menu, Search, ShieldCheck, Store, Users, X } from 'lucide-react';
+import { Bell, CalendarCheck, CreditCard, FolderTree, Gauge, HandCoins, LogOut, Menu, Search, ShieldCheck, Store, Users, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/admin/services', label: 'Services', icon: Store },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
   { to: '/admin/earnings', label: 'Commissions', icon: HandCoins },
+  { to: '/admin/payments', label: 'Payments', icon: CreditCard },
 ];
 
 export default function AdminLayout() {

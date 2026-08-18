@@ -4,6 +4,7 @@ import CustomerLayout from '../layouts/CustomerLayout.jsx';
 import ProviderLayout from '../layouts/ProviderLayout.jsx';
 import Bookings from '../pages/Bookings.jsx';
 import Dashboard from '../pages/Dashboard.jsx';
+import PaymentManager from '../pages/PaymentManager.jsx';
 import Earnings from '../pages/Earnings.jsx';
 import Landing from '../pages/Landing.jsx';
 import Login from '../pages/Login.jsx';
@@ -71,6 +72,7 @@ export default function AppRoutes() {
           <Route path="services" element={<ServicesAdmin />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="earnings" element={<Earnings />} />
+          <Route path="payments" element={<PaymentManager />} />
         </Route>
       </Route>
 
