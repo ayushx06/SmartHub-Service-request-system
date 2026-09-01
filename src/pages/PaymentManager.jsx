@@ -8,7 +8,14 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { collection, doc, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
 
 import StatCard from '../components/StatCard.jsx';
 import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
@@ -20,6 +27,10 @@ export default function PaymentManager() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+
+  // Get all transactions from Firestore
   const transactionsQuery = useMemo(
     () =>
       query(
@@ -34,44 +45,29 @@ export default function PaymentManager() {
     []
   );
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const search = searchQuery.toLowerCase();
-
-      const transactionId = transaction.id?.toLowerCase() || '';
-      const userId = transaction.userId?.toLowerCase() || '';
-      const bookingId = transaction.bookingId?.toLowerCase() || '';
-
-      const matchesSearch =
-        transactionId.includes(search) ||
-        userId.includes(search) ||
-        bookingId.includes(search);
-
-      const matchesStatus =
-        statusFilter === 'All' ||
-        transaction.status?.toLowerCase() === statusFilter.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [transactions, searchQuery, statusFilter]);
-
-  const completedPayments = transactions.filter(
-    (transaction) => transaction.status?.toLowerCase() === 'completed'
+  // Transaction status groups
+  const pendingPayments = transactions.filter(
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'pending'
   );
 
-  const pendingPayments = transactions.filter(
-    (transaction) => transaction.status?.toLowerCase() === 'pending'
+  const completedPayments = transactions.filter(
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'completed'
   );
 
   const failedPayments = transactions.filter(
-    (transaction) => transaction.status?.toLowerCase() === 'failed'
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'failed'
   );
 
   const refundedPayments = transactions.filter(
-    (transaction) => transaction.status?.toLowerCase() === 'refunded'
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'refunded'
   );
 
-  const totalRevenue = completedPayments.reduce(
+  // Financial calculations
+  const completedRevenue = completedPayments.reduce(
     (sum, transaction) =>
       sum + Number(transaction.totalAmount || 0),
     0
@@ -83,6 +79,47 @@ export default function PaymentManager() {
     0
   );
 
+  const providerEarnings = completedPayments.reduce(
+    (sum, transaction) =>
+      sum + Number(transaction.providerAmount || 0),
+    0
+  );
+
+  const refundedAmount = refundedPayments.reduce(
+    (sum, transaction) =>
+      sum + Number(transaction.totalAmount || 0),
+    0
+  );
+
+  // Search and filter
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((transaction) => {
+      const search = searchQuery.toLowerCase();
+
+      const transactionId =
+        transaction.id?.toLowerCase() || '';
+
+      const userId =
+        transaction.userId?.toLowerCase() || '';
+
+      const bookingId =
+        transaction.bookingId?.toLowerCase() || '';
+
+      const matchesSearch =
+        transactionId.includes(search) ||
+        userId.includes(search) ||
+        bookingId.includes(search);
+
+      const matchesStatus =
+        statusFilter === 'All' ||
+        transaction.status?.toLowerCase() ===
+          statusFilter.toLowerCase();
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [transactions, searchQuery, statusFilter]);
+
+  // Format Firestore timestamp
   function formatDate(timestamp) {
     if (!timestamp) {
       return 'N/A';
@@ -99,6 +136,7 @@ export default function PaymentManager() {
     return 'N/A';
   }
 
+  // Status badge styles
   function getStatusClass(status) {
     const normalizedStatus = status?.toLowerCase();
 
@@ -117,11 +155,16 @@ export default function PaymentManager() {
     return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300';
   }
 
+  // Update payment status
   async function updateTransactionStatus(id, newStatus) {
     try {
       setActionLoading(true);
 
-      const transactionRef = doc(db, 'transactions', id);
+      const transactionRef = doc(
+        db,
+        'transactions',
+        id
+      );
 
       await updateDoc(transactionRef, {
         status: newStatus,
@@ -137,8 +180,69 @@ export default function PaymentManager() {
           : currentTransaction
       );
     } catch (error) {
-      console.error('Error updating transaction:', error);
-      alert('Unable to update the payment status.');
+      console.error(
+        'Error updating transaction:',
+        error
+      );
+
+      alert(
+        'Unable to update the payment status.'
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  // Process refund
+  async function handleRefund() {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    if (!refundReason.trim()) {
+      alert(
+        'Please provide a reason for the refund.'
+      );
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+
+      const transactionRef = doc(
+        db,
+        'transactions',
+        selectedTransaction.id
+      );
+
+      await updateDoc(transactionRef, {
+        status: 'refunded',
+        refundReason: refundReason.trim(),
+        refundedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setSelectedTransaction((currentTransaction) =>
+        currentTransaction
+          ? {
+              ...currentTransaction,
+              status: 'refunded',
+              refundReason: refundReason.trim(),
+            }
+          : currentTransaction
+      );
+
+      setRefundReason('');
+      setShowRefundModal(false);
+    } catch (error) {
+      console.error(
+        'Error processing refund:',
+        error
+      );
+
+      alert(
+        'Unable to process the refund.'
+      );
     } finally {
       setActionLoading(false);
     }
@@ -149,102 +253,74 @@ export default function PaymentManager() {
 
       {/* Header */}
       <div>
-        <h1 className="page-title">Payment Management</h1>
+        <h1 className="page-title">
+          Payment Management
+        </h1>
 
         <p className="muted mt-1">
-          Manage transactions, verify payments, handle refunds and view
-          financial reports.
+          Review, verify and manage SmartHub payment
+          transactions.
         </p>
       </div>
 
-      {/* Statistics */}
+      {/* Admin Overview */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
         <StatCard
-          icon={DollarSign}
-          label="Total Revenue"
-          value={`$${totalRevenue.toFixed(2)}`}
-          change="Completed"
+          icon={Clock}
+          label="Needs Verification"
+          value={pendingPayments.length}
+          change="Action required"
         />
 
         <StatCard
           icon={CheckCircle}
           label="Completed Payments"
           value={completedPayments.length}
-          change="Completed"
-        />
-
-        <StatCard
-          icon={Clock}
-          label="Pending Payments"
-          value={pendingPayments.length}
-          change="Review"
+          change="Verified"
         />
 
         <StatCard
           icon={XCircle}
           label="Failed Payments"
           value={failedPayments.length}
-          change="Failed"
+          change="Rejected"
+        />
+
+        <StatCard
+          icon={RotateCcw}
+          label="Refunded Payments"
+          value={refundedPayments.length}
+          change="Processed"
         />
 
       </div>
 
-      {/* Transactions */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {/* Payments Requiring Verification */}
+      <div className="overflow-hidden rounded-xl border border-yellow-200 bg-white shadow-sm dark:border-yellow-900 dark:bg-slate-900">
 
-        <div className="border-b border-slate-200 p-5 dark:border-slate-800">
+        <div className="border-b border-yellow-100 bg-yellow-50 p-5 dark:border-yellow-900 dark:bg-yellow-950/30">
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+
+            <div className="rounded-lg bg-yellow-100 p-2 dark:bg-yellow-900">
+              <Clock className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
+            </div>
 
             <div>
               <h2 className="text-lg font-semibold">
-                Transactions
+                Payments Requiring Verification
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Review and manage payment transactions from Firestore.
+                These payments require administrator review
+                before they can be completed.
               </p>
             </div>
 
-            {/* Search and filter */}
-            <div className="flex flex-col gap-3 sm:flex-row">
-
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
-
-                <Search className="h-4 w-4 text-slate-400" />
-
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) =>
-                    setSearchQuery(event.target.value)
-                  }
-                  placeholder="Search transaction..."
-                  className="w-full bg-transparent text-sm outline-none sm:w-52"
-                />
-
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value)
-                }
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none dark:border-slate-700 dark:bg-slate-800"
-              >
-                <option value="All">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-                <option value="refunded">Refunded</option>
-              </select>
-
-            </div>
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
 
           <table className="w-full text-sm">
@@ -252,13 +328,25 @@ export default function PaymentManager() {
             <thead className="bg-slate-50 dark:bg-slate-800">
 
               <tr>
-                <th className="p-4 text-left">Transaction</th>
-                <th className="p-4 text-left">User</th>
-                <th className="p-4 text-left">Amount</th>
-                <th className="p-4 text-left">Payment Method</th>
-                <th className="p-4 text-left">Status</th>
-                <th className="p-4 text-left">Date</th>
-                <th className="p-4 text-left">Action</th>
+                <th className="p-4 text-left">
+                  Transaction
+                </th>
+
+                <th className="p-4 text-left">
+                  Amount
+                </th>
+
+                <th className="p-4 text-left">
+                  Payment Method
+                </th>
+
+                <th className="p-4 text-left">
+                  Date
+                </th>
+
+                <th className="p-4 text-left">
+                  Action
+                </th>
               </tr>
 
             </thead>
@@ -269,34 +357,40 @@ export default function PaymentManager() {
 
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="5"
                     className="p-8 text-center text-slate-500"
                   >
-                    Loading transactions...
+                    Loading payments...
                   </td>
                 </tr>
 
-              ) : filteredTransactions.length > 0 ? (
+              ) : pendingPayments.length > 0 ? (
 
-                filteredTransactions.map((transaction) => (
+                pendingPayments.map((transaction) => (
 
                   <tr
                     key={transaction.id}
                     className="border-t border-slate-100 dark:border-slate-800"
                   >
 
+                    <td className="p-4">
+
+                      <p className="font-semibold">
+                        {transaction.id}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        Booking{' '}
+                        {transaction.bookingId || 'N/A'}
+                      </p>
+
+                    </td>
+
                     <td className="p-4 font-medium">
-                      {transaction.id}
-                    </td>
-
-                    <td className="p-4">
-                      {transaction.userId
-                        ? `${transaction.userId.slice(0, 8)}...`
-                        : 'N/A'}
-                    </td>
-
-                    <td className="p-4">
-                      ${Number(transaction.totalAmount || 0).toFixed(2)}
+                      $
+                      {Number(
+                        transaction.totalAmount || 0
+                      ).toFixed(2)}
                     </td>
 
                     <td className="p-4">
@@ -304,19 +398,9 @@ export default function PaymentManager() {
                     </td>
 
                     <td className="p-4">
-
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusClass(
-                          transaction.status
-                        )}`}
-                      >
-                        {transaction.status || 'Unknown'}
-                      </span>
-
-                    </td>
-
-                    <td className="p-4">
-                      {formatDate(transaction.createdAt)}
+                      {formatDate(
+                        transaction.createdAt
+                      )}
                     </td>
 
                     <td className="p-4">
@@ -324,11 +408,13 @@ export default function PaymentManager() {
                       <button
                         type="button"
                         onClick={() =>
-                          setSelectedTransaction(transaction)
+                          setSelectedTransaction(
+                            transaction
+                          )
                         }
-                        className="font-medium text-brand-600 hover:text-brand-700 hover:underline dark:text-brand-300"
+                        className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-medium text-white hover:bg-brand-700"
                       >
-                        View
+                        Review Payment
                       </button>
 
                     </td>
@@ -341,10 +427,20 @@ export default function PaymentManager() {
 
                 <tr>
                   <td
-                    colSpan="7"
-                    className="p-8 text-center text-sm text-slate-500"
+                    colSpan="5"
+                    className="p-8 text-center"
                   >
-                    No transactions found.
+
+                    <CheckCircle className="mx-auto mb-2 h-8 w-8 text-green-500" />
+
+                    <p className="font-medium">
+                      No payments require verification
+                    </p>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      All pending payments have been reviewed.
+                    </p>
+
                   </td>
                 </tr>
 
@@ -357,83 +453,276 @@ export default function PaymentManager() {
         </div>
       </div>
 
-      {/* Payment Functions */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Transaction History */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
-        {/* Verify */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-200 p-5 dark:border-slate-800">
 
-          <CheckCircle className="mb-3 h-6 w-6" />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-          <h2 className="font-semibold">
-            Verify Payments
-          </h2>
+            <div>
+              <h2 className="text-lg font-semibold">
+                Transaction History
+              </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
-            Review pending payments and verify transactions.
-          </p>
+              <p className="mt-1 text-sm text-slate-500">
+                View and search all payment transactions.
+              </p>
+            </div>
 
-          <p className="mt-4 text-sm font-medium">
-            {pendingPayments.length} payment
-            {pendingPayments.length !== 1 ? 's' : ''} waiting for review
-          </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
+
+                <Search className="h-4 w-4 text-slate-400" />
+
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) =>
+                    setSearchQuery(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Search transactions..."
+                  className="w-full bg-transparent text-sm outline-none sm:w-52"
+                />
+
+              </div>
+
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(
+                    event.target.value
+                  )
+                }
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none dark:border-slate-700 dark:bg-slate-800"
+              >
+
+                <option value="All">
+                  All Status
+                </option>
+
+                <option value="pending">
+                  Pending
+                </option>
+
+                <option value="completed">
+                  Completed
+                </option>
+
+                <option value="failed">
+                  Failed
+                </option>
+
+                <option value="refunded">
+                  Refunded
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
 
         </div>
 
-        {/* Refunds */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="overflow-x-auto">
 
-          <RotateCcw className="mb-3 h-6 w-6" />
+          <table className="w-full text-sm">
 
-          <h2 className="font-semibold">
-            Refunds
-          </h2>
+            <thead className="bg-slate-50 dark:bg-slate-800">
 
-          <p className="mt-1 text-sm text-slate-500">
-            Review and manage refunded transactions.
-          </p>
+              <tr>
 
-          <p className="mt-4 text-sm font-medium">
-            {refundedPayments.length} refunded transaction
-            {refundedPayments.length !== 1 ? 's' : ''}
-          </p>
+                <th className="p-4 text-left">
+                  Transaction
+                </th>
+
+                <th className="p-4 text-left">
+                  Amount
+                </th>
+
+                <th className="p-4 text-left">
+                  Method
+                </th>
+
+                <th className="p-4 text-left">
+                  Status
+                </th>
+
+                <th className="p-4 text-left">
+                  Date
+                </th>
+
+                <th className="p-4 text-left">
+                  Action
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              {filteredTransactions.length > 0 ? (
+
+                filteredTransactions.map(
+                  (transaction) => (
+
+                    <tr
+                      key={transaction.id}
+                      className="border-t border-slate-100 dark:border-slate-800"
+                    >
+
+                      <td className="p-4 font-medium">
+                        {transaction.id}
+                      </td>
+
+                      <td className="p-4">
+                        $
+                        {Number(
+                          transaction.totalAmount || 0
+                        ).toFixed(2)}
+                      </td>
+
+                      <td className="p-4">
+                        {transaction.paymentMethod || 'N/A'}
+                      </td>
+
+                      <td className="p-4">
+
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusClass(
+                            transaction.status
+                          )}`}
+                        >
+                          {transaction.status || 'Unknown'}
+                        </span>
+
+                      </td>
+
+                      <td className="p-4">
+                        {formatDate(
+                          transaction.createdAt
+                        )}
+                      </td>
+
+                      <td className="p-4">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedTransaction(
+                              transaction
+                            )
+                          }
+                          className="font-medium text-brand-600 hover:underline dark:text-brand-300"
+                        >
+                          View
+                        </button>
+
+                      </td>
+
+                    </tr>
+
+                  )
+                )
+
+              ) : (
+
+                <tr>
+
+                  <td
+                    colSpan="6"
+                    className="p-8 text-center text-slate-500"
+                  >
+                    No transactions found.
+                  </td>
+
+                </tr>
+
+              )}
+
+            </tbody>
+
+          </table>
 
         </div>
 
-        {/* Reports */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      </div>
 
-          <DollarSign className="mb-3 h-6 w-6" />
+      {/* Financial Summary */}
+      <div>
 
-          <h2 className="font-semibold">
-            Financial Reports
-          </h2>
+        <h2 className="mb-4 text-lg font-semibold">
+          Financial Summary
+        </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
-            View revenue, commissions and payment statistics.
-          </p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
-          <div className="mt-4 space-y-1 text-sm">
-            <p>
-              Revenue:{' '}
-              <span className="font-semibold">
-                ${totalRevenue.toFixed(2)}
-              </span>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+            <DollarSign className="mb-3 h-6 w-6" />
+
+            <p className="text-sm text-slate-500">
+              Completed Revenue
             </p>
 
-            <p>
-              Commission:{' '}
-              <span className="font-semibold">
-                ${totalCommission.toFixed(2)}
-              </span>
+            <p className="mt-1 text-2xl font-bold">
+              ${completedRevenue.toFixed(2)}
             </p>
+
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+            <DollarSign className="mb-3 h-6 w-6" />
+
+            <p className="text-sm text-slate-500">
+              Admin Commission
+            </p>
+
+            <p className="mt-1 text-2xl font-bold">
+              ${totalCommission.toFixed(2)}
+            </p>
+
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+            <DollarSign className="mb-3 h-6 w-6" />
+
+            <p className="text-sm text-slate-500">
+              Provider Earnings
+            </p>
+
+            <p className="mt-1 text-2xl font-bold">
+              ${providerEarnings.toFixed(2)}
+            </p>
+
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+            <RotateCcw className="mb-3 h-6 w-6" />
+
+            <p className="text-sm text-slate-500">
+              Refunded Amount
+            </p>
+
+            <p className="mt-1 text-2xl font-bold">
+              ${refundedAmount.toFixed(2)}
+            </p>
+
           </div>
 
         </div>
 
       </div>
 
-      {/* Transaction Modal */}
+      {/* Payment Review Modal */}
       {selectedTransaction && (
 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
@@ -446,20 +735,23 @@ export default function PaymentManager() {
               <div>
 
                 <h2 className="text-lg font-semibold">
-                  Transaction Details
+                  Payment Review
                 </h2>
 
                 <p className="text-sm text-slate-500">
-                  Review payment information and manage its status.
+                  Review transaction details before taking
+                  action.
                 </p>
 
               </div>
 
               <button
                 type="button"
-                onClick={() => setSelectedTransaction(null)}
+                onClick={() =>
+                  setSelectedTransaction(null)
+                }
                 className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-                aria-label="Close transaction details"
+                disabled={actionLoading}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -472,6 +764,7 @@ export default function PaymentManager() {
               <div className="grid grid-cols-2 gap-4">
 
                 <div>
+
                   <p className="text-xs uppercase text-slate-500">
                     Transaction ID
                   </p>
@@ -479,6 +772,7 @@ export default function PaymentManager() {
                   <p className="mt-1 break-all text-sm font-medium">
                     {selectedTransaction.id}
                   </p>
+
                 </div>
 
                 <div>
@@ -542,7 +836,7 @@ export default function PaymentManager() {
                 <div>
 
                   <p className="text-xs uppercase text-slate-500">
-                    Commission
+                    Admin Commission
                   </p>
 
                   <p className="mt-1 font-medium">
@@ -572,11 +866,13 @@ export default function PaymentManager() {
                 <div>
 
                   <p className="text-xs uppercase text-slate-500">
-                    Date
+                    Created
                   </p>
 
                   <p className="mt-1 font-medium">
-                    {formatDate(selectedTransaction.createdAt)}
+                    {formatDate(
+                      selectedTransaction.createdAt
+                    )}
                   </p>
 
                 </div>
@@ -619,6 +915,22 @@ export default function PaymentManager() {
 
               </div>
 
+              {selectedTransaction.status?.toLowerCase() ===
+                'refunded' && (
+                <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30">
+
+                  <p className="text-xs uppercase text-slate-500">
+                    Refund Reason
+                  </p>
+
+                  <p className="mt-1 text-sm">
+                    {selectedTransaction.refundReason ||
+                      'No reason provided'}
+                  </p>
+
+                </div>
+              )}
+
             </div>
 
             {/* Modal Actions */}
@@ -626,14 +938,18 @@ export default function PaymentManager() {
 
               <button
                 type="button"
-                onClick={() => setSelectedTransaction(null)}
+                onClick={() =>
+                  setSelectedTransaction(null)
+                }
                 className="btn-muted"
                 disabled={actionLoading}
               >
                 Close
               </button>
 
-              {selectedTransaction.status?.toLowerCase() === 'pending' && (
+              {/* Pending actions */}
+              {selectedTransaction.status?.toLowerCase() ===
+                'pending' && (
                 <>
                   <button
                     type="button"
@@ -646,7 +962,9 @@ export default function PaymentManager() {
                     }
                     className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:hover:bg-red-950"
                   >
-                    {actionLoading ? 'Updating...' : 'Reject Payment'}
+                    {actionLoading
+                      ? 'Updating...'
+                      : 'Reject Payment'}
                   </button>
 
                   <button
@@ -660,26 +978,169 @@ export default function PaymentManager() {
                     }
                     className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                   >
-                    {actionLoading ? 'Updating...' : 'Verify Payment'}
+                    {actionLoading
+                      ? 'Updating...'
+                      : 'Verify Payment'}
                   </button>
                 </>
               )}
 
-              {selectedTransaction.status?.toLowerCase() === 'completed' && (
+              {/* Refund action */}
+              {selectedTransaction.status?.toLowerCase() ===
+                'completed' && (
                 <button
                   type="button"
                   disabled={actionLoading}
                   onClick={() =>
-                    updateTransactionStatus(
-                      selectedTransaction.id,
-                      'refunded'
-                    )
+                    setShowRefundModal(true)
                   }
                   className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                 >
-                  {actionLoading ? 'Processing...' : 'Refund Payment'}
+                  Refund Payment
                 </button>
               )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {showRefundModal && selectedTransaction && (
+
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4">
+
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+
+            {/* Refund Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
+
+              <div>
+
+                <h2 className="text-lg font-semibold">
+                  Confirm Refund
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  This action will mark the payment as refunded.
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundReason('');
+                }}
+                className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                disabled={actionLoading}
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+            </div>
+
+            {/* Refund Details */}
+            <div className="space-y-5 p-5">
+
+              <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
+
+                <div className="flex justify-between">
+
+                  <span className="text-sm text-slate-500">
+                    Transaction
+                  </span>
+
+                  <span className="max-w-[200px] truncate text-sm font-medium">
+                    {selectedTransaction.id}
+                  </span>
+
+                </div>
+
+                <div className="mt-3 flex justify-between">
+
+                  <span className="text-sm text-slate-500">
+                    Refund Amount
+                  </span>
+
+                  <span className="text-lg font-semibold">
+                    $
+                    {Number(
+                      selectedTransaction.totalAmount || 0
+                    ).toFixed(2)}
+                  </span>
+
+                </div>
+
+              </div>
+
+              {/* Reason */}
+              <div>
+
+                <label
+                  htmlFor="refundReason"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Refund Reason
+                </label>
+
+                <textarea
+                  id="refundReason"
+                  value={refundReason}
+                  onChange={(event) =>
+                    setRefundReason(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Enter the reason for this refund..."
+                  rows="4"
+                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800"
+                />
+
+              </div>
+
+              {/* Warning */}
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-300">
+
+                Please make sure the refund is authorised
+                before confirming this action.
+
+              </div>
+
+            </div>
+
+            {/* Refund Actions */}
+            <div className="flex justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundReason('');
+                }}
+                className="btn-muted"
+                disabled={actionLoading}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRefund}
+                disabled={
+                  actionLoading ||
+                  !refundReason.trim()
+                }
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoading
+                  ? 'Processing...'
+                  : 'Confirm Refund'}
+              </button>
 
             </div>
 
