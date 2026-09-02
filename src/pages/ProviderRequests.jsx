@@ -5,11 +5,40 @@ import EmptyState from '../components/EmptyState.jsx';
 import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
 import { approveProvider, rejectProvider } from '../lib/firestore.js';
 import { db } from '../firebase.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function ProviderRequests() {
+  const { currentUser, userProfile } = useAuth();
   const [notes, setNotes] = useState({});
   const requestsQuery = useMemo(() => query(collection(db, 'providers'), where('verificationStatus', '==', 'pending'), orderBy('createdAt', 'desc')), []);
   const { items: providers } = useFirestoreQuery(requestsQuery, []);
+
+  async function handleApprove(provider) {
+    const reason = window.prompt('Reason for approving this provider:')?.trim();
+    if (!reason) return;
+
+    try {
+      await approveProvider(provider, { currentUser, userProfile }, reason);
+    } catch (error) {
+      console.error('Failed to approve provider:', error);
+      window.alert('The provider could not be approved. Please try again.');
+    }
+  }
+
+  async function handleReject(provider) {
+    const reason = (notes[provider.id] || '').trim();
+    if (!reason) {
+      window.alert('Enter a rejection note before rejecting this provider.');
+      return;
+    }
+
+    try {
+      await rejectProvider(provider, { currentUser, userProfile }, reason);
+    } catch (error) {
+      console.error('Failed to reject provider:', error);
+      window.alert('The provider could not be rejected. Please try again.');
+    }
+  }
 
   return (
     <section className="space-y-6">
@@ -34,8 +63,8 @@ export default function ProviderRequests() {
               <div className="w-full space-y-3 lg:max-w-sm">
                 <textarea className="input min-h-20" placeholder="Rejection note" value={notes[provider.id] || ''} onChange={(event) => setNotes({ ...notes, [provider.id]: event.target.value })} />
                 <div className="flex gap-2">
-                  <button className="btn-primary flex-1" onClick={() => approveProvider(provider.id)}>Approve</button>
-                  <button className="btn-muted flex-1 text-rose-700" onClick={() => rejectProvider(provider.id, notes[provider.id] || '')}>Reject</button>
+                  <button className="btn-primary flex-1" onClick={() => handleApprove(provider)}>Approve</button>
+                  <button className="btn-muted flex-1 text-rose-700" onClick={() => handleReject(provider)}>Reject</button>
                 </div>
               </div>
             </div>
