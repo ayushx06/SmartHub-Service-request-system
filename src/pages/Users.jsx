@@ -7,6 +7,7 @@ import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
 import { db } from '../firebase.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { logAdminAction } from '../lib/firestore.js';
+import { filterUsers } from '../utils/adminSearch.js';
 
 function titleCase(value) {
   if (typeof value !== 'string' || !value.trim()) {
@@ -23,12 +24,7 @@ export default function Users() {
   const { currentUser, userProfile } = useAuth();
   const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), []);
   const { items: users } = useFirestoreQuery(usersQuery, []);
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredUsers = useMemo(() => {
-    if (!normalizedQuery) return users;
-    return users.filter((user) => [user.fullName, user.email, user.phone, user.role, user.status]
-      .some((value) => String(value ?? '').toLowerCase().includes(normalizedQuery)));
-  }, [normalizedQuery, users]);
+  const filteredUsers = useMemo(() => filterUsers(users, searchQuery), [searchQuery, users]);
 
   async function toggleDisabled(user) {
     const status = user.status === 'disabled' ? (user.role === 'provider' ? 'approved' : 'active') : 'disabled';

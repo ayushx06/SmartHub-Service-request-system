@@ -7,6 +7,7 @@ import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
 import { db } from '../firebase.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { logAdminAction } from '../lib/firestore.js';
+import { filterServices } from '../utils/adminSearch.js';
 
 function label(status = '') {
   return status.replace(/^\w/, (letter) => letter.toUpperCase());
@@ -17,12 +18,7 @@ export default function ServicesAdmin() {
   const { currentUser, userProfile } = useAuth();
   const servicesQuery = useMemo(() => query(collection(db, 'services'), orderBy('createdAt', 'desc')), []);
   const { items: services } = useFirestoreQuery(servicesQuery, []);
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredServices = useMemo(() => {
-    if (!normalizedQuery) return services;
-    return services.filter((service) => [service.title, service.providerName, service.categoryName, service.location, service.status]
-      .some((value) => String(value ?? '').toLowerCase().includes(normalizedQuery)));
-  }, [normalizedQuery, services]);
+  const filteredServices = useMemo(() => filterServices(services, searchQuery), [searchQuery, services]);
 
   async function updateStatus(service, status) {
     if (service.status === status) return;

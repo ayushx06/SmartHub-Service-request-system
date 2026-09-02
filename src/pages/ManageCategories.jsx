@@ -8,6 +8,7 @@ import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
 import { logAdminAction } from '../lib/firestore.js';
 import { db } from '../firebase.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { filterCategories } from '../utils/adminSearch.js';
 
 export default function ManageCategories() {
   const { searchQuery = '' } = useOutletContext();
@@ -15,12 +16,7 @@ export default function ManageCategories() {
   const categoriesQuery = useMemo(() => query(collection(db, 'categories'), orderBy('name')), []);
   const { items: categories } = useFirestoreQuery(categoriesQuery, []);
   const [form, setForm] = useState({ name: '', description: '' });
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredCategories = useMemo(() => {
-    if (!normalizedQuery) return categories;
-    return categories.filter((category) => [category.name, category.description]
-      .some((value) => String(value ?? '').toLowerCase().includes(normalizedQuery)));
-  }, [categories, normalizedQuery]);
+  const filteredCategories = useMemo(() => filterCategories(categories, searchQuery), [categories, searchQuery]);
 
   async function handleSubmit(event) {
     event.preventDefault();
