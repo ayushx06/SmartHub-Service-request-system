@@ -30,6 +30,9 @@ export default function PaymentManager() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState('');
 
+  // Financial report period
+  const [reportPeriod, setReportPeriod] = useState('all');
+
   // Get all transactions from Firestore
   const transactionsQuery = useMemo(
     () =>
@@ -45,7 +48,10 @@ export default function PaymentManager() {
     []
   );
 
-  // Transaction status groups
+  // =========================================================
+  // TRANSACTION STATUS GROUPS
+  // =========================================================
+
   const pendingPayments = transactions.filter(
     (transaction) =>
       transaction.status?.toLowerCase() === 'pending'
@@ -66,32 +72,97 @@ export default function PaymentManager() {
       transaction.status?.toLowerCase() === 'refunded'
   );
 
-  // Financial calculations
-  const completedRevenue = completedPayments.reduce(
+  // =========================================================
+  // FINANCIAL REPORT FILTER
+  // =========================================================
+
+  const reportTransactions = useMemo(() => {
+    if (reportPeriod === 'all') {
+      return transactions;
+    }
+
+    const now = new Date();
+
+    return transactions.filter((transaction) => {
+      if (!transaction.createdAt?.toDate) {
+        return false;
+      }
+
+      const transactionDate = transaction.createdAt.toDate();
+
+      if (reportPeriod === 'month') {
+        return (
+          transactionDate.getMonth() === now.getMonth() &&
+          transactionDate.getFullYear() === now.getFullYear()
+        );
+      }
+
+      if (reportPeriod === 'year') {
+        return (
+          transactionDate.getFullYear() === now.getFullYear()
+        );
+      }
+
+      return true;
+    });
+  }, [transactions, reportPeriod]);
+
+  // =========================================================
+  // REPORT TRANSACTION COUNTS
+  // =========================================================
+
+  const reportCompletedPayments = reportTransactions.filter(
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'completed'
+  );
+
+  const reportPendingPayments = reportTransactions.filter(
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'pending'
+  );
+
+  const reportFailedPayments = reportTransactions.filter(
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'failed'
+  );
+
+  const reportRefundedPayments = reportTransactions.filter(
+    (transaction) =>
+      transaction.status?.toLowerCase() === 'refunded'
+  );
+
+  // =========================================================
+  // FINANCIAL CALCULATIONS
+  // =========================================================
+
+  const reportRevenue = reportCompletedPayments.reduce(
     (sum, transaction) =>
       sum + Number(transaction.totalAmount || 0),
     0
   );
 
-  const totalCommission = completedPayments.reduce(
+  const reportCommission = reportCompletedPayments.reduce(
     (sum, transaction) =>
       sum + Number(transaction.commissionAmount || 0),
     0
   );
 
-  const providerEarnings = completedPayments.reduce(
+  const reportProviderEarnings = reportCompletedPayments.reduce(
     (sum, transaction) =>
       sum + Number(transaction.providerAmount || 0),
     0
   );
 
-  const refundedAmount = refundedPayments.reduce(
+  const reportRefundedAmount = reportRefundedPayments.reduce(
     (sum, transaction) =>
       sum + Number(transaction.totalAmount || 0),
     0
   );
 
-  // Search and filter
+  // =========================================================
+  // SEARCH AND FILTER
+  // =========================================================
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
       const search = searchQuery.toLowerCase();
@@ -119,7 +190,10 @@ export default function PaymentManager() {
     });
   }, [transactions, searchQuery, statusFilter]);
 
-  // Format Firestore timestamp
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
   function formatDate(timestamp) {
     if (!timestamp) {
       return 'N/A';
@@ -136,7 +210,6 @@ export default function PaymentManager() {
     return 'N/A';
   }
 
-  // Status badge styles
   function getStatusClass(status) {
     const normalizedStatus = status?.toLowerCase();
 
@@ -155,7 +228,10 @@ export default function PaymentManager() {
     return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300';
   }
 
-  // Update payment status
+  // =========================================================
+  // VERIFY / REJECT PAYMENT
+  // =========================================================
+
   async function updateTransactionStatus(id, newStatus) {
     try {
       setActionLoading(true);
@@ -193,7 +269,10 @@ export default function PaymentManager() {
     }
   }
 
-  // Process refund
+  // =========================================================
+  // REFUND PAYMENT
+  // =========================================================
+
   async function handleRefund() {
     if (!selectedTransaction) {
       return;
@@ -251,7 +330,10 @@ export default function PaymentManager() {
   return (
     <section className="space-y-6">
 
-      {/* Header */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <div>
         <h1 className="page-title">
           Payment Management
@@ -263,7 +345,10 @@ export default function PaymentManager() {
         </p>
       </div>
 
-      {/* Admin Overview */}
+      {/* =====================================================
+          ADMIN OVERVIEW
+      ===================================================== */}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
         <StatCard
@@ -296,7 +381,10 @@ export default function PaymentManager() {
 
       </div>
 
-      {/* Payments Requiring Verification */}
+      {/* =====================================================
+          PAYMENTS REQUIRING VERIFICATION
+      ===================================================== */}
+
       <div className="overflow-hidden rounded-xl border border-yellow-200 bg-white shadow-sm dark:border-yellow-900 dark:bg-slate-900">
 
         <div className="border-b border-yellow-100 bg-yellow-50 p-5 dark:border-yellow-900 dark:bg-yellow-950/30">
@@ -304,10 +392,13 @@ export default function PaymentManager() {
           <div className="flex items-center gap-3">
 
             <div className="rounded-lg bg-yellow-100 p-2 dark:bg-yellow-900">
+
               <Clock className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
+
             </div>
 
             <div>
+
               <h2 className="text-lg font-semibold">
                 Payments Requiring Verification
               </h2>
@@ -316,9 +407,11 @@ export default function PaymentManager() {
                 These payments require administrator review
                 before they can be completed.
               </p>
+
             </div>
 
           </div>
+
         </div>
 
         <div className="overflow-x-auto">
@@ -328,6 +421,7 @@ export default function PaymentManager() {
             <thead className="bg-slate-50 dark:bg-slate-800">
 
               <tr>
+
                 <th className="p-4 text-left">
                   Transaction
                 </th>
@@ -347,6 +441,7 @@ export default function PaymentManager() {
                 <th className="p-4 text-left">
                   Action
                 </th>
+
               </tr>
 
             </thead>
@@ -356,12 +451,14 @@ export default function PaymentManager() {
               {loading ? (
 
                 <tr>
+
                   <td
                     colSpan="5"
                     className="p-8 text-center text-slate-500"
                   >
                     Loading payments...
                   </td>
+
                 </tr>
 
               ) : pendingPayments.length > 0 ? (
@@ -426,6 +523,7 @@ export default function PaymentManager() {
               ) : (
 
                 <tr>
+
                   <td
                     colSpan="5"
                     className="p-8 text-center"
@@ -442,6 +540,7 @@ export default function PaymentManager() {
                     </p>
 
                   </td>
+
                 </tr>
 
               )}
@@ -451,9 +550,13 @@ export default function PaymentManager() {
           </table>
 
         </div>
+
       </div>
 
-      {/* Transaction History */}
+      {/* =====================================================
+          TRANSACTION HISTORY
+      ===================================================== */}
+
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
         <div className="border-b border-slate-200 p-5 dark:border-slate-800">
@@ -461,6 +564,7 @@ export default function PaymentManager() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
             <div>
+
               <h2 className="text-lg font-semibold">
                 Transaction History
               </h2>
@@ -468,6 +572,7 @@ export default function PaymentManager() {
               <p className="mt-1 text-sm text-slate-500">
                 View and search all payment transactions.
               </p>
+
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -653,14 +758,58 @@ export default function PaymentManager() {
 
       </div>
 
-      {/* Financial Summary */}
+      {/* =====================================================
+          FINANCIAL REPORTS
+      ===================================================== */}
+
       <div>
 
-        <h2 className="mb-4 text-lg font-semibold">
-          Financial Summary
-        </h2>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+          <div>
+
+            <h2 className="text-lg font-semibold">
+              Financial Reports
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Financial performance based on payment
+              transactions.
+            </p>
+
+          </div>
+
+          <select
+            value={reportPeriod}
+            onChange={(event) =>
+              setReportPeriod(
+                event.target.value
+              )
+            }
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none dark:border-slate-700 dark:bg-slate-800"
+          >
+
+            <option value="all">
+              All Time
+            </option>
+
+            <option value="month">
+              This Month
+            </option>
+
+            <option value="year">
+              This Year
+            </option>
+
+          </select>
+
+        </div>
+
+        {/* Financial Cards */}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+          {/* Completed Revenue */}
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -671,10 +820,12 @@ export default function PaymentManager() {
             </p>
 
             <p className="mt-1 text-2xl font-bold">
-              ${completedRevenue.toFixed(2)}
+              ${reportRevenue.toFixed(2)}
             </p>
 
           </div>
+
+          {/* Admin Commission */}
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -685,10 +836,12 @@ export default function PaymentManager() {
             </p>
 
             <p className="mt-1 text-2xl font-bold">
-              ${totalCommission.toFixed(2)}
+              ${reportCommission.toFixed(2)}
             </p>
 
           </div>
+
+          {/* Provider Earnings */}
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -699,10 +852,12 @@ export default function PaymentManager() {
             </p>
 
             <p className="mt-1 text-2xl font-bold">
-              ${providerEarnings.toFixed(2)}
+              ${reportProviderEarnings.toFixed(2)}
             </p>
 
           </div>
+
+          {/* Refunded Amount */}
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
@@ -713,8 +868,120 @@ export default function PaymentManager() {
             </p>
 
             <p className="mt-1 text-2xl font-bold">
-              ${refundedAmount.toFixed(2)}
+              ${reportRefundedAmount.toFixed(2)}
             </p>
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            PAYMENT STATISTICS
+        ================================================= */}
+
+        <div className="mt-6">
+
+          <h3 className="mb-3 text-base font-semibold">
+            Payment Statistics
+          </h3>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+            {/* Completed */}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-sm text-slate-500">
+                    Completed
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {reportCompletedPayments.length}
+                  </p>
+
+                </div>
+
+                <CheckCircle className="h-6 w-6 text-green-500" />
+
+              </div>
+
+            </div>
+
+            {/* Pending */}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-sm text-slate-500">
+                    Pending
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {reportPendingPayments.length}
+                  </p>
+
+                </div>
+
+                <Clock className="h-6 w-6 text-yellow-500" />
+
+              </div>
+
+            </div>
+
+            {/* Failed */}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-sm text-slate-500">
+                    Failed
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {reportFailedPayments.length}
+                  </p>
+
+                </div>
+
+                <XCircle className="h-6 w-6 text-red-500" />
+
+              </div>
+
+            </div>
+
+            {/* Refunded */}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-sm text-slate-500">
+                    Refunded
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {reportRefundedPayments.length}
+                  </p>
+
+                </div>
+
+                <RotateCcw className="h-6 w-6 text-blue-500" />
+
+              </div>
+
+            </div>
 
           </div>
 
@@ -722,7 +989,10 @@ export default function PaymentManager() {
 
       </div>
 
-      {/* Payment Review Modal */}
+      {/* =====================================================
+          PAYMENT REVIEW MODAL
+      ===================================================== */}
+
       {selectedTransaction && (
 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
@@ -730,6 +1000,7 @@ export default function PaymentManager() {
           <div className="w-full max-w-lg rounded-xl bg-white shadow-xl dark:bg-slate-900">
 
             {/* Modal Header */}
+
             <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
 
               <div>
@@ -759,6 +1030,7 @@ export default function PaymentManager() {
             </div>
 
             {/* Modal Content */}
+
             <div className="space-y-5 p-5">
 
               <div className="grid grid-cols-2 gap-4">
@@ -917,6 +1189,7 @@ export default function PaymentManager() {
 
               {selectedTransaction.status?.toLowerCase() ===
                 'refunded' && (
+
                 <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30">
 
                   <p className="text-xs uppercase text-slate-500">
@@ -929,11 +1202,13 @@ export default function PaymentManager() {
                   </p>
 
                 </div>
+
               )}
 
             </div>
 
             {/* Modal Actions */}
+
             <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
 
               <button
@@ -948,9 +1223,12 @@ export default function PaymentManager() {
               </button>
 
               {/* Pending actions */}
+
               {selectedTransaction.status?.toLowerCase() ===
                 'pending' && (
+
                 <>
+
                   <button
                     type="button"
                     disabled={actionLoading}
@@ -982,12 +1260,16 @@ export default function PaymentManager() {
                       ? 'Updating...'
                       : 'Verify Payment'}
                   </button>
+
                 </>
+
               )}
 
               {/* Refund action */}
+
               {selectedTransaction.status?.toLowerCase() ===
                 'completed' && (
+
                 <button
                   type="button"
                   disabled={actionLoading}
@@ -998,6 +1280,7 @@ export default function PaymentManager() {
                 >
                   Refund Payment
                 </button>
+
               )}
 
             </div>
@@ -1008,7 +1291,10 @@ export default function PaymentManager() {
 
       )}
 
-      {/* Refund Confirmation Modal */}
+      {/* =====================================================
+          REFUND CONFIRMATION MODAL
+      ===================================================== */}
+
       {showRefundModal && selectedTransaction && (
 
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4">
@@ -1016,6 +1302,7 @@ export default function PaymentManager() {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
 
             {/* Refund Header */}
+
             <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
 
               <div>
@@ -1045,6 +1332,7 @@ export default function PaymentManager() {
             </div>
 
             {/* Refund Details */}
+
             <div className="space-y-5 p-5">
 
               <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
@@ -1078,7 +1366,8 @@ export default function PaymentManager() {
 
               </div>
 
-              {/* Reason */}
+              {/* Refund Reason */}
+
               <div>
 
                 <label
@@ -1104,6 +1393,7 @@ export default function PaymentManager() {
               </div>
 
               {/* Warning */}
+
               <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-300">
 
                 Please make sure the refund is authorised
@@ -1114,6 +1404,7 @@ export default function PaymentManager() {
             </div>
 
             {/* Refund Actions */}
+
             <div className="flex justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
 
               <button

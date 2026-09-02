@@ -3,16 +3,28 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 export function getRolePath(profile) {
   if (!profile) return '/login';
-  if (profile.role === 'admin') return '/admin';
-  if (profile.role === 'provider') {
-    return profile.status === 'approved' ? '/provider' : '/provider/pending';
+
+  if (profile.role === 'admin') {
+    return '/admin';
   }
+
+  if (profile.role === 'paymentManager') {
+    return '/payment-manager';
+  }
+
+  if (profile.role === 'provider') {
+    return profile.status === 'approved'
+      ? '/provider'
+      : '/provider/pending';
+  }
+
   return '/user/dashboard';
 }
 
 export default function ProtectedRoute({ allowedRoles, requireApprovedProvider = false }) {
   const { currentUser, loading, userProfile } = useAuth();
   const location = useLocation();
+
 
   if (loading) {
     return (

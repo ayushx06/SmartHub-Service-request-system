@@ -26,6 +26,12 @@ import ProviderDashboard from '../pages/provider/ProviderDashboard.jsx';
 import ProviderPending from '../pages/provider/ProviderPending.jsx';
 import ProviderServices from '../pages/provider/ProviderServices.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
+import PaymentManagerLayout from '../layouts/PaymentManagerLayout.jsx';
+
+import PaymentManagerDashboard from '../pages/payment-manager/PaymentManagerDashboard.jsx';
+import PaymentVerification from '../pages/payment-manager/PaymentVerification.jsx';
+import PaymentTransactions from '../pages/payment-manager/PaymentTransactions.jsx';
+import PaymentReports from '../pages/payment-manager/PaymentReports.jsx';
 
 export default function AppRoutes() {
   return (
@@ -75,6 +81,39 @@ export default function AppRoutes() {
           <Route path="payments" element={<PaymentManager />} />
         </Route>
       </Route>
+
+      <Route
+  element={
+    <ProtectedRoute
+      allowedRoles={['paymentManager']}
+    />
+  }
+>
+  <Route
+    path="/payment-manager"
+    element={<PaymentManagerLayout />}
+  >
+    <Route
+      index
+      element={<PaymentManagerDashboard />}
+    />
+
+    <Route
+      path="verification"
+      element={<PaymentVerification />}
+    />
+
+    <Route
+      path="transactions"
+      element={<PaymentTransactions />}
+    />
+
+    <Route
+      path="reports"
+      element={<PaymentReports />}
+    />
+  </Route>
+</Route>
 
       <Route path="/customer/*" element={<Navigate to="/user/dashboard" replace />} />
       <Route path="*" element={<NotFound />} />
