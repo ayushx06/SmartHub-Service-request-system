@@ -1,5 +1,6 @@
 import { collection, orderBy, query } from 'firebase/firestore';
 import { useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import Badge from '../components/Badge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
@@ -10,8 +11,15 @@ function label(status = '') {
 }
 
 export default function Bookings() {
+  const { searchQuery = '' } = useOutletContext();
   const bookingsQuery = useMemo(() => query(collection(db, 'bookings'), orderBy('createdAt', 'desc')), []);
   const { items: bookings } = useFirestoreQuery(bookingsQuery, []);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredBookings = useMemo(() => {
+    if (!normalizedQuery) return bookings;
+    return bookings.filter((booking) => [booking.serviceTitle, booking.userName, booking.paymentMethod, booking.bookingStatus, booking.id, booking.userId, booking.serviceId]
+      .some((value) => String(value ?? '').toLowerCase().includes(normalizedQuery)));
+  }, [bookings, normalizedQuery]);
 
   return (
     <section className="space-y-6">
@@ -21,7 +29,7 @@ export default function Bookings() {
       </div>
 
       <div className="panel overflow-hidden">
-        {bookings.map((booking) => (
+        {filteredBookings.map((booking) => (
           <div key={booking.id} className="grid gap-3 border-b border-slate-100 p-5 last:border-0 xl:grid-cols-[1.2fr_1fr_150px_120px] xl:items-center">
             <div>
               <p className="font-semibold text-slate-950">{booking.serviceTitle}</p>
@@ -35,6 +43,7 @@ export default function Bookings() {
           </div>
         ))}
         {!bookings.length && <div className="p-5"><EmptyState title="No bookings" message="Bookings created by customers will appear here." /></div>}
+        {!!bookings.length && !filteredBookings.length && <div className="p-5"><EmptyState title="No bookings match your search" message="Try a different service, customer, payment method, status, or ID." /></div>}
       </div>
     </section>
   );

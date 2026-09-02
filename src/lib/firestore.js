@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
@@ -60,18 +61,66 @@ export async function createBooking({ service, user, paymentMethod }) {
   return bookingRef.id;
 }
 
-export async function approveProvider(uid) {
-  await Promise.all([
-    updateDoc(doc(db, 'users', uid), { status: 'approved', updatedAt: serverTimestamp() }),
-    updateDoc(doc(db, 'providers', uid), { verificationStatus: 'approved', adminNote: '', updatedAt: serverTimestamp() }),
-  ]);
+export function logAdminAction({ batch, admin, action, targetType, targetId, targetName, reason, previousValue, newValue }) {
+  const auditRef = doc(collection(db, 'adminAuditLogs'));
+  const auditData = {
+    adminId: admin?.currentUser?.uid || admin?.userProfile?.uid || '',
+    adminName: admin?.userProfile?.fullName || admin?.currentUser?.displayName || 'Admin',
+    adminEmail: admin?.currentUser?.email || admin?.userProfile?.email || '',
+    action,
+    targetType,
+    targetId,
+    targetName: targetName || '',
+    reason,
+    previousValue: previousValue ?? null,
+    newValue: newValue ?? null,
+    createdAt: serverTimestamp(),
+  };
+
+  if (batch) {
+    batch.set(auditRef, auditData);
+    return auditRef;
+  }
+
+  return addDoc(collection(db, 'adminAuditLogs'), auditData);
 }
 
-export async function rejectProvider(uid, adminNote = '') {
-  await Promise.all([
-    updateDoc(doc(db, 'users', uid), { status: 'rejected', updatedAt: serverTimestamp() }),
-    updateDoc(doc(db, 'providers', uid), { verificationStatus: 'rejected', adminNote, updatedAt: serverTimestamp() }),
-  ]);
+export async function approveProvider(provider, admin, reason) {
+  const batch = writeBatch(db);
+  const updatedAt = serverTimestamp();
+  batch.update(doc(db, 'users', provider.id), { status: 'approved', updatedAt });
+  batch.update(doc(db, 'providers', provider.id), { verificationStatus: 'approved', adminNote: '', updatedAt });
+  logAdminAction({
+    batch,
+    admin,
+    action: 'PROVIDER_APPROVED',
+    targetType: 'provider',
+    targetId: provider.id,
+    targetName: provider.businessName || provider.ownerName,
+    reason,
+    previousValue: provider.verificationStatus,
+    newValue: 'approved',
+  });
+  await batch.commit();
+}
+
+export async function rejectProvider(provider, admin, adminNote) {
+  const batch = writeBatch(db);
+  const updatedAt = serverTimestamp();
+  batch.update(doc(db, 'users', provider.id), { status: 'rejected', updatedAt });
+  batch.update(doc(db, 'providers', provider.id), { verificationStatus: 'rejected', adminNote, updatedAt });
+  logAdminAction({
+    batch,
+    admin,
+    action: 'PROVIDER_REJECTED',
+    targetType: 'provider',
+    targetId: provider.id,
+    targetName: provider.businessName || provider.ownerName,
+    reason: adminNote,
+    previousValue: provider.verificationStatus,
+    newValue: 'rejected',
+  });
+  await batch.commit();
 }
 
 export async function setBookingStatus(booking, status) {

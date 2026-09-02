@@ -74,7 +74,7 @@ export default function AdminLayout() {
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500 dark:text-slate-200"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search bookings, users, services"
+                placeholder="Search users, services, bookings, categories"
               />
             </div>
           </div>
