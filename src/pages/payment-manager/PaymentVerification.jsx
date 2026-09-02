@@ -20,6 +20,7 @@ import { db } from '../../firebase.js';
 export default function PaymentVerification() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const transactionsQuery = useMemo(
     () =>
@@ -80,6 +81,7 @@ export default function PaymentVerification() {
   async function updateTransactionStatus(id, newStatus) {
     try {
       setActionLoading(true);
+      setActionError('');
 
       const transactionRef = doc(
         db,
@@ -101,14 +103,17 @@ export default function PaymentVerification() {
           : currentTransaction
       );
     } catch (error) {
-      console.error(
-        'Error updating transaction:',
-        error
-      );
+      console.error('Error updating transaction:', error);
 
-      alert(
-        'Unable to update the payment status.'
-      );
+      if (error.code === 'permission-denied') {
+        setActionError(
+          'You do not have permission to update this payment.'
+        );
+      } else {
+        setActionError(
+          'Unable to update the payment status. Please try again.'
+        );
+      }
     } finally {
       setActionLoading(false);
     }
@@ -261,11 +266,10 @@ export default function PaymentVerification() {
                     <td className="p-4">
                       <button
                         type="button"
-                        onClick={() =>
-                          setSelectedTransaction(
-                            transaction
-                          )
-                        }
+                        onClick={() => {
+                          setActionError('');
+                          setSelectedTransaction(transaction);
+                        }}
                         className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-medium text-white hover:bg-brand-700"
                       >
                         Review Payment
@@ -315,9 +319,10 @@ export default function PaymentVerification() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setSelectedTransaction(null)
-                }
+                onClick={() => {
+                  setActionError('');
+                  setSelectedTransaction(null);
+                }}
                 className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
                 disabled={actionLoading}
               >
@@ -326,6 +331,15 @@ export default function PaymentVerification() {
             </div>
 
             <div className="space-y-5 p-5">
+              {actionError && (
+                <div
+                  role="alert"
+                  className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+                >
+                  {actionError}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs uppercase text-slate-500">
@@ -438,9 +452,10 @@ export default function PaymentVerification() {
             <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() =>
-                  setSelectedTransaction(null)
-                }
+                onClick={() => {
+                  setActionError('');
+                  setSelectedTransaction(null);
+                }}
                 className="btn-muted"
                 disabled={actionLoading}
               >

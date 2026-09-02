@@ -11,7 +11,7 @@ const navItems = [
   { to: '/admin/services', label: 'Services', icon: Store },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
   { to: '/admin/earnings', label: 'Commissions', icon: HandCoins },
-  { to: '/admin/payments', label: 'Payments', icon: CreditCard },
+  { to: '/payment-manager', label: 'Payments', icon: CreditCard },
 ];
 
 export default function AdminLayout() {
