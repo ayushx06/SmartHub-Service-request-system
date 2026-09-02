@@ -5,6 +5,7 @@ import Badge from '../components/Badge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import useFirestoreQuery from '../hooks/useFirestoreQuery.js';
 import { db } from '../firebase.js';
+import { filterBookings } from '../utils/adminSearch.js';
 
 function label(status = '') {
   return status.replace(/^\w/, (letter) => letter.toUpperCase());
@@ -14,12 +15,7 @@ export default function Bookings() {
   const { searchQuery = '' } = useOutletContext();
   const bookingsQuery = useMemo(() => query(collection(db, 'bookings'), orderBy('createdAt', 'desc')), []);
   const { items: bookings } = useFirestoreQuery(bookingsQuery, []);
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredBookings = useMemo(() => {
-    if (!normalizedQuery) return bookings;
-    return bookings.filter((booking) => [booking.serviceTitle, booking.userName, booking.paymentMethod, booking.bookingStatus, booking.id, booking.userId, booking.serviceId]
-      .some((value) => String(value ?? '').toLowerCase().includes(normalizedQuery)));
-  }, [bookings, normalizedQuery]);
+  const filteredBookings = useMemo(() => filterBookings(bookings, searchQuery), [bookings, searchQuery]);
 
   return (
     <section className="space-y-6">
