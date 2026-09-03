@@ -1,0 +1,167 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isPaymentManager() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "paymentManager";
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn()
+        && (request.auth.uid == userId || isAdmin());
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && (
+          (
+            request.resource.data.role == 'user'
+            && request.resource.data.status == 'active'
+          )
+          ||
+          (
+            request.resource.data.role == 'provider'
+            && request.resource.data.status == 'pending'
+          )
+        );
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /providers/{providerId} {
+      allow read: if true;
+
+      allow create: if signedIn()
+        && request.auth.uid == providerId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.verificationStatus == 'pending'
+        && request.resource.data.adminNote == ''
+        && request.resource.data.totalEarnings == 0
+        && request.resource.data.totalCommissionPaid == 0;
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == providerId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.verificationStatus == resource.data.verificationStatus
+          && request.resource.data.adminNote == resource.data.adminNote
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && request.resource.data.providerId == request.auth.uid
+        );
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.providerId == request.auth.uid
+          && request.resource.data.providerId == request.auth.uid
+        );
+
+      allow delete: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.providerId == request.auth.uid
+        );
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && (
+            resource.data.userId == request.auth.uid
+            || resource.data.providerId == request.auth.uid
+          )
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && (
+            resource.data.userId == request.auth.uid
+            || resource.data.providerId == request.auth.uid
+          )
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.providerId == resource.data.providerId
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read, write: if isAdmin() || isPaymentManager();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.userId == request.auth.uid
+        );
+
+      allow create: if signedIn();
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+        );
+
+      allow delete: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.userId == request.auth.uid
+        );
+    }
+
+    match /adminAuditLogs/{logId} {
+      allow create, read: if isAdmin() || isPaymentManager();
+      allow update, delete: if false;
+    }
+  }
+}
