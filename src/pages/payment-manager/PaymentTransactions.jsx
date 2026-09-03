@@ -9,18 +9,29 @@ import {
 import { useMemo, useState } from 'react';
 import {
   collection,
+  doc,
   orderBy,
   query,
+  serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 
 import useFirestoreQuery from '../../hooks/useFirestoreQuery.js';
 import { db } from '../../firebase.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function PaymentTransactions() {
+  const { currentUser, userProfile } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedTransaction, setSelectedTransaction] =
     useState(null);
+
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const transactionsQuery = useMemo(
     () =>
@@ -89,6 +100,100 @@ export default function PaymentTransactions() {
     }
 
     return XCircle;
+  }
+
+  async function handleRefund() {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    if (
+      selectedTransaction.status?.toLowerCase() !==
+      'completed'
+    ) {
+      setActionError(
+        'Only completed payments can be refunded.'
+      );
+      return;
+    }
+
+    if (!refundReason.trim()) {
+      setActionError(
+        'Please provide a reason for the refund.'
+      );
+      return;
+    }
+
+    if (!currentUser || !userProfile) {
+      setActionError(
+        'Unable to verify your account. Please log in again.'
+      );
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setActionError('');
+
+      const transactionRef = doc(
+        db,
+        'transactions',
+        selectedTransaction.id
+      );
+
+      const auditLogRef = doc(
+        collection(db, 'adminAuditLogs')
+      );
+
+      const batch = writeBatch(db);
+
+      batch.update(transactionRef, {
+        status: 'refunded',
+        refundReason: refundReason.trim(),
+        refundedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      batch.set(auditLogRef, {
+        userId: currentUser.uid,
+        userRole: userProfile.role,
+        action: 'REFUND_PAYMENT',
+        transactionId: selectedTransaction.id,
+        timestamp: serverTimestamp(),
+      });
+
+      await batch.commit();
+
+      setSelectedTransaction((currentTransaction) =>
+        currentTransaction
+          ? {
+              ...currentTransaction,
+              status: 'refunded',
+              refundReason: refundReason.trim(),
+            }
+          : currentTransaction
+      );
+
+      setRefundReason('');
+      setShowRefundModal(false);
+    } catch (error) {
+      console.error(
+        'Error processing refund:',
+        error
+      );
+
+      if (error.code === 'permission-denied') {
+        setActionError(
+          'You do not have permission to process this refund.'
+        );
+      } else {
+        setActionError(
+          'Unable to process the refund. Please try again.'
+        );
+      }
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   const filteredTransactions = useMemo(() => {
@@ -306,11 +411,12 @@ export default function PaymentTransactions() {
                         <td className="p-4">
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
                               setSelectedTransaction(
                                 transaction
-                              )
-                            }
+                              );
+                              setActionError('');
+                            }}
                             className="inline-flex items-center gap-1.5 font-medium text-brand-600 hover:underline dark:text-brand-300"
                           >
                             <Eye className="h-4 w-4" />
@@ -357,6 +463,7 @@ export default function PaymentTransactions() {
                   setSelectedTransaction(null)
                 }
                 className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                disabled={actionLoading}
               >
                 <XCircle className="h-5 w-5" />
               </button>
@@ -502,28 +609,182 @@ export default function PaymentTransactions() {
                 </p>
               </div>
 
-              {selectedTransaction.refundReason && (
+              {selectedTransaction.status?.toLowerCase() ===
+                'refunded' && (
                 <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30">
                   <p className="text-xs uppercase text-slate-500">
                     Refund Reason
                   </p>
 
                   <p className="mt-1 text-sm">
-                    {selectedTransaction.refundReason}
+                    {selectedTransaction.refundReason ||
+                      'No reason provided'}
                   </p>
+
+                  {selectedTransaction.refundedAt && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Refunded on:{' '}
+                      {formatDate(
+                        selectedTransaction.refundedAt
+                      )}
+                    </p>
+                  )}
                 </div>
+              )}
+
+              {actionError && (
+                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {actionError}
+                </p>
               )}
             </div>
 
-            <div className="flex justify-end border-t border-slate-200 p-5 dark:border-slate-800">
+            <div className="flex justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() =>
                   setSelectedTransaction(null)
                 }
                 className="btn-muted"
+                disabled={actionLoading}
               >
                 Close
+              </button>
+
+              {selectedTransaction.status?.toLowerCase() ===
+                'completed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionError('');
+                    setRefundReason('');
+                    setShowRefundModal(true);
+                  }}
+                  disabled={actionLoading}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                >
+                  Refund Payment
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {showRefundModal && selectedTransaction && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Confirm Refund
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  This action will mark the payment as refunded.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundReason('');
+                  setActionError('');
+                }}
+                className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                disabled={actionLoading}
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5 p-5">
+              <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">
+                    Transaction
+                  </span>
+
+                  <span className="max-w-[200px] truncate text-sm font-medium">
+                    {selectedTransaction.id}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex justify-between">
+                  <span className="text-sm text-slate-500">
+                    Refund Amount
+                  </span>
+
+                  <span className="text-lg font-semibold">
+                    $
+                    {Number(
+                      selectedTransaction.totalAmount ||
+                        0
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="refundReason"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Refund Reason
+                </label>
+
+                <textarea
+                  id="refundReason"
+                  value={refundReason}
+                  onChange={(event) =>
+                    setRefundReason(event.target.value)
+                  }
+                  placeholder="Enter the reason for this refund..."
+                  rows="4"
+                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800"
+                />
+              </div>
+
+              {actionError && (
+                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {actionError}
+                </p>
+              )}
+
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-300">
+                Please make sure the refund is authorised
+                before confirming this action.
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundReason('');
+                  setActionError('');
+                }}
+                className="btn-muted"
+                disabled={actionLoading}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRefund}
+                disabled={
+                  actionLoading ||
+                  !refundReason.trim()
+                }
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoading
+                  ? 'Processing...'
+                  : 'Confirm Refund'}
               </button>
             </div>
           </div>
