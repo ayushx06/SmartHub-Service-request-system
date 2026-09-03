@@ -19,7 +19,7 @@ export default function Login() {
 
     try {
       const { profile } = await login(form.email, form.password);
-      navigate(location.state?.from || getRolePath(profile), { replace: true });
+      navigate(getRolePath(profile), { replace: true });
     } catch (loginError) {
       setError(loginError.message);
     } finally {
