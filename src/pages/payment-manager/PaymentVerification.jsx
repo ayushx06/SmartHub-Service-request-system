@@ -11,16 +11,19 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 import useFirestoreQuery from '../../hooks/useFirestoreQuery.js';
 import { db } from '../../firebase.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function PaymentVerification() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
+
+  const { currentUser, userProfile } = useAuth();
 
   const transactionsQuery = useMemo(
     () =>
@@ -83,16 +86,47 @@ export default function PaymentVerification() {
       setActionLoading(true);
       setActionError('');
 
+      if (!currentUser || !userProfile) {
+        setActionError(
+          'Unable to verify your account. Please log in again.'
+        );
+        return;
+      }
+
       const transactionRef = doc(
         db,
         'transactions',
         id
       );
 
-      await updateDoc(transactionRef, {
+      const auditLogRef = doc(
+        collection(db, 'adminAuditLogs')
+      );
+
+      const action =
+        newStatus === 'completed'
+          ? 'VERIFY_PAYMENT'
+          : 'REJECT_PAYMENT';
+
+      const batch = writeBatch(db);
+
+      // Update the payment transaction
+      batch.update(transactionRef, {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
+
+      // Create an immutable audit log
+      batch.set(auditLogRef, {
+        userId: currentUser.uid,
+        userRole: userProfile.role,
+        action,
+        transactionId: id,
+        timestamp: serverTimestamp(),
+      });
+
+      // Both operations succeed or fail together
+      await batch.commit();
 
       setSelectedTransaction((currentTransaction) =>
         currentTransaction?.id === id
@@ -103,7 +137,10 @@ export default function PaymentVerification() {
           : currentTransaction
       );
     } catch (error) {
-      console.error('Error updating transaction:', error);
+      console.error(
+        'Error updating transaction or creating audit log:',
+        error
+      );
 
       if (error.code === 'permission-denied') {
         setActionError(
