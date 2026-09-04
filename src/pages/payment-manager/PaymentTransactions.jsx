@@ -20,6 +20,12 @@ import useFirestoreQuery from '../../hooks/useFirestoreQuery.js';
 import { db } from '../../firebase.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 
+import {
+  filterTransactions,
+  canRefundTransaction,
+  validateRefundReason,
+} from '../../utils/paymentManager.js';
+
 export default function PaymentTransactions() {
   const { currentUser, userProfile } = useAuth();
 
@@ -107,17 +113,14 @@ export default function PaymentTransactions() {
       return;
     }
 
-    if (
-      selectedTransaction.status?.toLowerCase() !==
-      'completed'
-    ) {
+    if (!canRefundTransaction(selectedTransaction)) {
       setActionError(
         'Only completed payments can be refunded.'
       );
       return;
     }
 
-    if (!refundReason.trim()) {
+    if (!validateRefundReason(refundReason)) {
       setActionError(
         'Please provide a reason for the refund.'
       );
@@ -197,39 +200,12 @@ export default function PaymentTransactions() {
   }
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const search = searchQuery.toLowerCase();
-
-      const transactionId =
-        transaction.id?.toLowerCase() || '';
-
-      const userId =
-        transaction.userId?.toLowerCase() || '';
-
-      const bookingId =
-        transaction.bookingId?.toLowerCase() || '';
-
-      const providerId =
-        transaction.providerId?.toLowerCase() || '';
-
-      const matchesSearch =
-        transactionId.includes(search) ||
-        userId.includes(search) ||
-        bookingId.includes(search) ||
-        providerId.includes(search);
-
-      const matchesStatus =
-        statusFilter === 'All' ||
-        transaction.status?.toLowerCase() ===
-          statusFilter.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [
-    transactions,
-    searchQuery,
-    statusFilter,
-  ]);
+    return filterTransactions(
+      transactions,
+      searchQuery,
+      statusFilter
+    );
+  }, [transactions, searchQuery, statusFilter]);
 
   return (
     <section className="space-y-6">
@@ -651,8 +627,7 @@ export default function PaymentTransactions() {
                 Close
               </button>
 
-              {selectedTransaction.status?.toLowerCase() ===
-                'completed' && (
+              {canRefundTransaction(selectedTransaction) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -778,7 +753,7 @@ export default function PaymentTransactions() {
                 onClick={handleRefund}
                 disabled={
                   actionLoading ||
-                  !refundReason.trim()
+                  !validateRefundReason(refundReason)
                 }
                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
