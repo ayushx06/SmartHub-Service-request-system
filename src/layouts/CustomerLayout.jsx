@@ -64,11 +64,7 @@ export default function CustomerLayout() {
               to={item.to}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`
+                `nav-link ${isActive ? 'nav-link-active' : ''}`
               }
             >
               <item.icon className="h-5 w-5" />

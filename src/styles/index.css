@@ -37,14 +37,67 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex touch-manipulation select-none items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold outline-none transition duration-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100;
   }
 
   .btn-primary {
-    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700;
+    @apply btn bg-brand-600 text-white shadow-sm;
   }
 
   .btn-muted {
-    @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+    @apply btn border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200;
+  }
+
+  /* Minimum 44x44px tap target, per WCAG 2.5.5 */
+  .nav-link {
+    @apply flex min-h-[44px] touch-manipulation select-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 outline-none transition duration-200 active:scale-[0.98] active:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+  }
+
+  .nav-link-active {
+    @apply bg-brand-50 font-semibold text-brand-700 shadow-sm;
+  }
+
+  .interactive-card {
+    @apply cursor-pointer touch-manipulation outline-none transition duration-200 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+  }
+}
+
+/*
+  Hover styles live behind this query so a phone does not keep a card
+  "stuck" in its hover state after a tap. Mouse users get hover, touch
+  users get the :active feedback defined above instead.
+*/
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    @apply bg-brand-700;
+  }
+
+  .btn-muted:hover {
+    @apply bg-slate-50 dark:bg-slate-800;
+  }
+
+  .nav-link:hover {
+    @apply bg-slate-100 text-slate-900;
+  }
+
+  .nav-link-active:hover {
+    @apply bg-brand-100 text-brand-800;
+  }
+
+  .interactive-card:hover {
+    @apply -translate-y-1 border-brand-300 shadow-lg;
+  }
+
+  .interactive-card:hover .card-image {
+    @apply scale-105;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .nav-link,
+  .interactive-card,
+  .card-image {
+    @apply transition-none active:scale-100;
   }
 }
