@@ -2,7 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 
 export default function StatCard({ label, value, change, icon: Icon }) {
   return (
-    <div className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="panel interactive-card p-5">
       <div className="flex items-center justify-between">
         <div className="rounded-lg bg-brand-50 p-2 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
           <Icon className="h-5 w-5" />

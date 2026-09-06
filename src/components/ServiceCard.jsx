@@ -5,9 +5,9 @@ export default function ServiceCard({ service, toPrefix = '/services' }) {
   const image = service.imageUrls?.[0] || '/favicon.svg';
 
   return (
-    <article className="panel overflow-hidden">
-      <div className="aspect-[4/3] bg-slate-100">
-        <img className="h-full w-full object-cover" src={image} alt={service.title} />
+    <article className="panel interactive-card group overflow-hidden">
+      <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+        <img className="card-image h-full w-full object-cover transition duration-300" src={image} alt={service.title} />
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-3">
