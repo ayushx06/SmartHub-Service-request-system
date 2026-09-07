@@ -4,7 +4,6 @@ import CustomerLayout from '../layouts/CustomerLayout.jsx';
 import ProviderLayout from '../layouts/ProviderLayout.jsx';
 import Bookings from '../pages/Bookings.jsx';
 import Dashboard from '../pages/Dashboard.jsx';
-import PaymentManager from '../pages/PaymentManager.jsx';
 import Earnings from '../pages/Earnings.jsx';
 import Landing from '../pages/Landing.jsx';
 import Login from '../pages/Login.jsx';
@@ -19,6 +18,7 @@ import Users from '../pages/Users.jsx';
 import BrowseServices from '../pages/customer/BrowseServices.jsx';
 import CustomerDashboard from '../pages/customer/CustomerDashboard.jsx';
 import MyBookings from '../pages/customer/MyBookings.jsx';
+import MySpending from '../pages/customer/MySpending.jsx';
 import ServiceDetails from '../pages/customer/ServiceDetails.jsx';
 import PostService from '../pages/provider/PostService.jsx';
 import ProviderBookings from '../pages/provider/ProviderBookings.jsx';
@@ -26,12 +26,6 @@ import ProviderDashboard from '../pages/provider/ProviderDashboard.jsx';
 import ProviderPending from '../pages/provider/ProviderPending.jsx';
 import ProviderServices from '../pages/provider/ProviderServices.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
-import PaymentManagerLayout from '../layouts/PaymentManagerLayout.jsx';
-
-import PaymentManagerDashboard from '../pages/payment-manager/PaymentManagerDashboard.jsx';
-import PaymentVerification from '../pages/payment-manager/PaymentVerification.jsx';
-import PaymentTransactions from '../pages/payment-manager/PaymentTransactions.jsx';
-import PaymentReports from '../pages/payment-manager/PaymentReports.jsx';
 
 export default function AppRoutes() {
   return (
@@ -51,6 +45,7 @@ export default function AppRoutes() {
           <Route path="services" element={<BrowseServices />} />
           <Route path="services/:id" element={<ServiceDetails />} />
           <Route path="bookings" element={<MyBookings />} />
+          <Route path="spending" element={<MySpending />} />
         </Route>
       </Route>
 
@@ -78,42 +73,8 @@ export default function AppRoutes() {
           <Route path="services" element={<ServicesAdmin />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="earnings" element={<Earnings />} />
-          <Route path="payments" element={<PaymentManager />} />
         </Route>
       </Route>
-
-      <Route
-  element={
-    <ProtectedRoute
-      allowedRoles={['admin','paymentManager']}
-    />
-  }
->
-  <Route
-    path="/payment-manager"
-    element={<PaymentManagerLayout />}
-  >
-    <Route
-      index
-      element={<PaymentManagerDashboard />}
-    />
-
-    <Route
-      path="verification"
-      element={<PaymentVerification />}
-    />
-
-    <Route
-      path="transactions"
-      element={<PaymentTransactions />}
-    />
-
-    <Route
-      path="reports"
-      element={<PaymentReports />}
-    />
-  </Route>
-</Route>
 
       <Route path="/customer/*" element={<Navigate to="/user/dashboard" replace />} />
       <Route path="*" element={<NotFound />} />
